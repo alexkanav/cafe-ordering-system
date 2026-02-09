@@ -17,7 +17,7 @@ class Staff(Base):
     created_notifications: Mapped[list["AdminNotification"]] = relationship(
         back_populates="created_by",
         foreign_keys="AdminNotification.created_staff_id",
-        cascade = "all, delete-orphan"
+        cascade="all, delete-orphan"
     )
 
     read_notifications: Mapped[list["AdminNotification"]] = relationship(
@@ -49,14 +49,14 @@ class AdminNotification(Base):
     type: Mapped[NotificationType] = mapped_column(
         Enum(NotificationType), default=NotificationType.info
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     created_staff_id: Mapped[int | None] = mapped_column(
         ForeignKey("staff.id"),
         nullable=True
     )
 
     is_read: Mapped[bool] = mapped_column(default=False)
-    read_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     read_staff_id: Mapped[int | None] = mapped_column(
         ForeignKey("staff.id"),
         nullable=True

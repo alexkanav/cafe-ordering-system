@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Table, Column, ForeignKey, DateTime, Date, String, Integer, Float, JSON
+from sqlalchemy import Table, Column, ForeignKey, DateTime, Date, String, Integer, JSON, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from infrastructure.db.base import Base
@@ -15,8 +15,8 @@ dish_extra_link = Table(
 class User(Base):
     __tablename__ = 'users'
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     orders: Mapped[list["Order"]] = relationship(back_populates="user")
     comments: Mapped[list["Comment"]] = relationship(back_populates="user")
@@ -30,7 +30,7 @@ class User(Base):
 class Category(Base):
     __tablename__ = 'categories'
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(30), unique=True)
     order: Mapped[int] = mapped_column(default=0)
 
@@ -72,7 +72,7 @@ class DishLike(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
     dish_code: Mapped[str] = mapped_column(ForeignKey("dishes.code"), primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     user: Mapped["User"] = relationship(back_populates="like_rel")
     dish: Mapped["Dish"] = relationship(back_populates="like_rel")
@@ -87,7 +87,7 @@ class DishExtra(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(20), unique=True)
     name_ua: Mapped[str] = mapped_column(String(20))
-    price: Mapped[int] = mapped_column(Float, default=0)
+    price: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
 
     dishes: Mapped[list["Dish"]] = relationship(
         "Dish",
@@ -102,19 +102,19 @@ class DishExtra(Base):
 class Order(Base):
     __tablename__ = 'orders'
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_by: Mapped[int | None] = mapped_column(
         ForeignKey("staff.id"),
         nullable=True
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     table: Mapped[int | None] = mapped_column(nullable=True)
-    original_cost: Mapped[float] = mapped_column(Float)
+    original_cost: Mapped[float] = mapped_column(Numeric(10, 2))
     loyalty_pct: Mapped[int] = mapped_column(default=0)
     coupon_pct: Mapped[int] = mapped_column(default=0)
-    final_cost: Mapped[float] = mapped_column(Float)
+    final_cost: Mapped[float] = mapped_column(Numeric(10, 2))
     order_details: Mapped[dict] = mapped_column(JSON)
 
     user: Mapped["User"] = relationship(back_populates="orders")
@@ -130,7 +130,7 @@ class Comment(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user_name: Mapped[str] = mapped_column(String(20))
-    comment_date_time: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    comment_date_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     comment_text: Mapped[str] = mapped_column(String(200))
 
     user: Mapped["User"] = relationship(back_populates="comments")
@@ -142,13 +142,13 @@ class Comment(Base):
 class Coupon(Base):
     __tablename__ = 'coupons'
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     code: Mapped[str] = mapped_column(String(20), unique=True)
     discount_value: Mapped[int] = mapped_column(default=0)
     is_active: Mapped[bool] = mapped_column(default=True)
     expires_at: Mapped[date | None] = mapped_column(Date, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
 
     user: Mapped['User'] = relationship('User', back_populates='coupons')
