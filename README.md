@@ -1,86 +1,137 @@
-# Restaurant Ordering System (Flask + React)
+# Cafe Ordering System (Flask + FastAPI + React)
 
-A full-featured, modern restaurant ordering system built with Flask (Python backend) and React (frontend SPA).
-Designed for small restaurants, cafes, or as an educational example of a real-world, modular Flask-React application.
+## A hybrid backend architecture combining Flask and FastAPI, paired with a React SPA, demonstrating consistent implementation of JWT authentication, caching, and rate limiting across both frameworks using Domain-Driven Design (DDD) principles.
+
+### Designed for real-world café workflows. Suitable for production use, learning purposes, and architectural experimentation.
+
+---
+## Architecture Overview
+- **Flask** – legacy-friendly and core synchronous operations
+- **FastAPI** – modern, async, high-performance APIs
+- **React** – responsive Single Page Application for customers, staff, and administrators
+
+The system cleanly separates concerns while allowing both frameworks to coexist under a unified domain model.
+
+---
+## Authentication, Caching & Rate Limiting
+### Flask Implementation
+
+#### JWT Authentication
+- flask-jwt-extended
+- Access & refresh tokens
+- Route protection via decorators
+
+#### Caching
+- flask-caching
+- Pluggable backends:
+  * Redis
+  * Filesystem
+  * In-memory 
+
+#### Rate Limiting
+- flask-limiter
+- IP-based limits using get_remote_address
+
+### FastAPI Implementation
+#### JWT Authentication
+- python-jose
+- Stateless token verification
+- Dependency-based route protection
+
+#### Caching
+- fastapi-cache
+- Redis backend (production)
+- In-memory backend (development/testing)
+
+#### Rate Limiting
+- Custom rate limiter built on SlowAPI
+- IP-based limits using get_remote_address
+ 
+---
+## Domain-Driven Design Layers
+- **Domain** → Pure business logic (framework-agnostic)
+- **Application / Transport** → Flask & FastAPI layers
+- **Infrastructure** → Database and external services
+- **Presentation** → React frontend
+This separation ensures testability, scalability, and long-term maintainability.
 
 ---
 ## Features
+- Role-based access control via JWT
+- Admin panel for menu and system management
+- Coupon and discount system with regular customer tracking
+- Analytics dashboard
+- Staff board for real-time order management
+- Clean, responsive UI for all user roles
 
-### Dynamic Menu Management
-Create, update, and display dishes through an intuitive interface.
-
-### Admin & Staff Dashboard
-View, process, and complete incoming customer orders.
-
-### Customer Ordering Interface
-A clean, responsive UI for placing new orders.
-
-### Order Status Tracking
-Track the progress of each order from New → In Progress → Completed.
-
-### Form Handling with react-hook-form
-Simplifies form validation and state management.
-
-### JWT-based Authentication
-Secure login and protected routes using Flask-JWT-Extended.
-
-### Backend Performance Optimization
-Uses Flask-Caching for faster response times.
-
-### API Rate Limiting
-Prevent abuse and manage traffic with Flask-Limiter.
-
-### Persistent Database Storage
-Powered by Flask-SQLAlchemy, compatible with:
+---
+## Database Support
+### Persistent storage with support for:
 - SQLite
 - PostgreSQL
 - MySQL
-- Any SQLAlchemy-supported DB
-
-### Modular App Structure
-Organized via Flask Blueprints (main, auth) for scalability and clarity.
-
-### Environment Variable Configuration
-Easily adapt settings for development, testing, or production.
 
 ---
-## Development Setup
+## Setup & Run Instructions
+### Prerequisites
+- Python 3.10+
+- Node.js 18+ (for React frontend)
+- Redis (optional, required for production caching & rate limiting)
 
-### Backend (Flask)
+### Backend Setup
+#### 1. Create and activate a virtual environment
+```bash
+python -m venv venv
 
-- Create and activate a virtual environment
+# Linux / macOS
+source venv/bin/activate
 
-- Install dependencies: pip install -r requirements.txt
+# Windows
+venv\Scripts\activate
+```
 
-- Run the server: flask run
+#### 2. Install Python dependencies
+```bash
+pip install -r requirements.txt
+```
+#### 3. Environment configuration
+```env
+FLASK_ENV=development
+SECRET_KEY=your-secret-key
+JWT_SECRET_KEY=your-jwt-secret
+REDIS_URL=redis://localhost:6379/0
+```
+Both Flask and FastAPI share configuration values where applicable.
 
-### Frontend (React)
+### Frontend Setup (Vite + React)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+---
+### Running the Services
+#### Run Flask API
+```bash
+flask run
+```
 
-- Navigate to the client/ directory
+#### Run FastAPI API
+```bash
+uvicorn fastapi_app.main:app --reload
+```
 
-- Install dependencies: npm install
-
-- Start the dev server: npm start
-
-Make sure both frontend and backend servers are running concurrently.
+Flask and FastAPI run as independent services and can be started separately or together.
 
 ---
 ## Production Deployment
-
-⚠️ Note: Never use flask run in production!
-
-For deployment:
-
-- Use a WSGI server like Gunicorn
-
-- Serve via a reverse proxy (e.g., Nginx)
-
-- Configure environment variables and production DB
-
-- Optionally use Docker for containerized deployment
+- Flask: WSGI server (Gunicorn / uWSGI)
+- FastAPI: ASGI server (Uvicorn / Hypercorn)
+- Reverse proxy (e.g., Nginx)
+- Environment-based configuration
+- Optional Docker containerization
 
 ---
 ## License
-
-This project is licensed under the MIT License.
-Feel free to use, modify, and distribute it as needed.
+#### MIT License
+Free to use, modify, and distribute.
