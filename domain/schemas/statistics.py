@@ -1,13 +1,12 @@
 from datetime import date
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class StatisticsQuerySchema(BaseModel):
+    model_config = ConfigDict(validate_by_name=True)
+
     start_date: date = Field(..., alias="startDate")
     end_date: date = Field(..., alias="endDate")
-
-    class Config:
-        allow_population_by_field_name = True
 
 
 class SalesSummarySchema(BaseModel):
