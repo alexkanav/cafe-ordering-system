@@ -1,3 +1,8 @@
+from infrastructure.logging_config import configure_logging
+
+configure_logging()
+
+import logging
 import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -9,29 +14,11 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from fastapi import Request
 from fastapi.responses import JSONResponse
-import logging
-from logging.handlers import RotatingFileHandler
 
 from fastapi_app.core.middleware import setup_middleware
 from fastapi_app.api.router import api_router
 from domain.core.settings import settings
 from fastapi_app.core.limiter import limiter
-
-settings.LOG_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
-file_handler = RotatingFileHandler(
-    settings.LOG_FILE_PATH,
-    maxBytes=10 * 1024 * 1024,  # 10 MB
-    backupCount=5,
-)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    handlers=[
-        file_handler,
-        logging.StreamHandler(),
-    ],
-)
 
 logger = logging.getLogger(__name__)
 

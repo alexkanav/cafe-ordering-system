@@ -1,29 +1,14 @@
-from flask import Flask, g
-import logging
-from logging.handlers import RotatingFileHandler
+from infrastructure.logging_config import configure_logging
 
+configure_logging()
+
+import logging
+from flask import Flask, g
 from flask_app.blueprints import register_blueprints
 from flask_app.extensions import cache, limiter, jwt
 from infrastructure.db.engine import engine, SessionLocal
 from infrastructure.db.base import Base
 from flask_app.config import Config
-from domain.core.settings import settings
-
-settings.LOG_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
-file_handler = RotatingFileHandler(
-    settings.LOG_FILE_PATH,
-    maxBytes=10 * 1024 * 1024,  # 10 MB
-    backupCount=5,
-)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    handlers=[
-        file_handler,
-        logging.StreamHandler(),
-    ],
-)
 
 logger = logging.getLogger(__name__)
 
