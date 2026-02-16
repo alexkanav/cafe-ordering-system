@@ -1,21 +1,21 @@
+import logging
 from fastapi import APIRouter, Depends, status, Request, HTTPException, Response
 from fastapi_cache.decorator import cache
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from domain.core.errors import NotFoundError, ConflictError, DomainValidationError
+from domain.core.constants import RedisPrefix, CacheNamespace, CacheKey
 from fastapi_app.core.limiter import limiter
-from domain.core.constants import COMMENTS_CACHE_KEY, MENU_CACHE_KEY
 from fastapi_app.dependencies.db import get_db
 from domain import services
-from fastapi_app.dependencies.auth import get_current_user, has_required_role
+from fastapi_app.dependencies.auth import get_current_user
 from fastapi_app.auth.jwt import create_access_token
 from fastapi_app.auth.cookies import set_auth_cookie
 from domain import schemas
 from utils.helpers import static_key
 from utils.discounts import calculate_discount
 from utils.enums import UserRole
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,6 @@ def get_me(
     return current_user
 
 
-@limiter.limit("5/hour")
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,
@@ -38,6 +37,7 @@ def get_me(
         status.HTTP_429_TOO_MANY_REQUESTS: {"model": schemas.RateLimitErrorSchema},
     },
 )
+@limiter.limit("10/hour")
 def create_user_endpoint(
         response: Response,
         request: Request,
@@ -62,20 +62,24 @@ def create_user_endpoint(
 
 
 @router.get("/comments", response_model=schemas.CommentResponseSchema)
-@cache(expire=3600, key_builder=static_key(COMMENTS_CACHE_KEY))
+@cache(
+    expire=3600,
+    key_builder=static_key(f"{RedisPrefix.CACHE}:{CacheNamespace.COMMENTS}:{CacheKey.LIST}")
+)
 def get_comments_endpoint(db: Session = Depends(get_db)):
     comments = services.get_comments(db, limit=10)
     return {"comments": comments}
 
 
-@limiter.limit("5/hour")
 @router.post(
     '/comments',
+    status_code=status.HTTP_201_CREATED,
     response_model=schemas.MessageResponseSchema,
     responses={
         status.HTTP_429_TOO_MANY_REQUESTS: {"model": schemas.RateLimitErrorSchema}
     },
 )
+@limiter.limit("2/hour")
 def add_comment_endpoint(
         request: Request,
         comment_data: schemas.CommentCreateSchema,
@@ -98,7 +102,10 @@ def add_comment_endpoint(
 
 
 @router.get("/menu", response_model=schemas.UserMenuResponseSchema)
-@cache(expire=3600, key_builder=static_key(MENU_CACHE_KEY))
+@cache(
+    expire=3600,
+    key_builder=static_key(f"{RedisPrefix.CACHE}:{CacheNamespace.MENU}:{CacheKey.DETAIL}")
+)
 def get_user_menu(db: Session = Depends(get_db)):
     return services.build_user_menu(db)
 

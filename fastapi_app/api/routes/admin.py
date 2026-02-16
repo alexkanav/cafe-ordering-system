@@ -1,10 +1,11 @@
+from anyio import from_thread
 from fastapi import APIRouter, Depends, status, HTTPException, Response, Query, UploadFile, File
 from fastapi_cache import FastAPICache
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 import logging
 
-from domain.core.constants import MENU_CACHE_KEY
+from domain.core.constants import CacheNamespace
 from domain.core.errors import NotFoundError, ConflictError, DomainValidationError, DomainError
 from fastapi_app.dependencies.db import get_db
 from domain import services
@@ -109,7 +110,8 @@ def update_categories_endpoint(
         logger.exception("Failed_to_update_categories")
         raise
 
-    FastAPICache.clear(MENU_CACHE_KEY)
+    from_thread.run(FastAPICache.clear, CacheNamespace.MENU)
+
     return {"message": "Категорії оновлено"}
 
 
@@ -128,7 +130,8 @@ def create_or_update_dish_endpoint(
         logger.exception("Failed_to_update_dish")
         raise
 
-    FastAPICache.clear(MENU_CACHE_KEY)
+    from_thread.run(FastAPICache.clear, CacheNamespace.MENU)
+
     return {"message": f"Страву {data.code} оновлено"}
 
 

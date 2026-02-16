@@ -9,7 +9,7 @@ from domain import services
 from utils.discounts import calculate_discount
 from domain import schemas
 from domain.core.errors import NotFoundError, ConflictError, DomainValidationError
-from domain.core.constants import MENU_CACHE_KEY, COMMENTS_CACHE_KEY
+from domain.core.constants import CacheNamespace
 from flask_app.security import role_required
 from utils.enums import UserRole
 
@@ -25,7 +25,7 @@ def get_me(user_id: int):
 
 
 @users_bp.route('/', methods=['POST'])
-@limiter.limit("5 per hour")
+@limiter.limit("10 per hour")
 def create_user_endpoint():
     user_id = services.create_user(g.db)
 
@@ -40,7 +40,7 @@ def create_user_endpoint():
 
 
 @users_bp.route('/comments', methods=['GET'])
-@cache.cached(timeout=3600, key_prefix=COMMENTS_CACHE_KEY)
+@cache.cached(timeout=3600, key_prefix=CacheNamespace.COMMENTS)
 def get_comments_endpoint():
     comments = services.get_comments(g.db, 10)
 
@@ -49,7 +49,7 @@ def get_comments_endpoint():
 
 @users_bp.route('/comments', methods=['POST'])
 @role_required()
-@limiter.limit("5 per hour")
+@limiter.limit("2 per hour")
 def add_comment_endpoint(user_id: int):
     json_data = request.get_json(silent=True)
     if not json_data:
@@ -62,12 +62,11 @@ def add_comment_endpoint(user_id: int):
 
     services.add_comment(g.db, user_id, comment)
 
-    cache.delete(COMMENTS_CACHE_KEY)
     return jsonify(message="Ваш коментар надіслано на модерацію"), 201
 
 
 @users_bp.route('/menu', methods=['GET'])
-@cache.cached(timeout=3600, key_prefix=MENU_CACHE_KEY)
+@cache.cached(timeout=3600, key_prefix=CacheNamespace.MENU)
 def get_user_menu():
     menu = services.build_user_menu(g.db)
     return jsonify(menu.model_dump()), 200

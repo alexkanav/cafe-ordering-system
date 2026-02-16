@@ -8,7 +8,7 @@ import logging
 from flask_app.extensions import cache
 from flask_app.security import role_required, require_active_staff
 from utils.images import process_image_upload
-from domain.core.constants import MENU_CACHE_KEY
+from domain.core.constants import CacheNamespace
 from domain.core.errors import NotFoundError, ConflictError, DomainError, DomainValidationError
 from domain import services
 from domain import schemas
@@ -201,15 +201,15 @@ def update_categories_endpoint():
     data = request.get_json(silent=True)
     if not data:
         return jsonify(detail="Invalid JSON"), 400
-
-    if not isinstance(data.get("categories"), list) or \
-            not all(isinstance(c, str) for c in data["categories"]):
+    print(14, data.get("category_names"), 15, data)
+    if not isinstance(data.get("category_names"), list) or \
+            not all(isinstance(c, str) for c in data["category_names"]):
         return jsonify(detail="Невірний формат категорій"), 400
 
-    services.update_categories(g.db, data["categories"])
+    services.update_categories(g.db, data["category_names"])
     logger.info("Categories_updated")
 
-    cache.delete(MENU_CACHE_KEY)
+    cache.delete(CacheNamespace.MENU)
     return jsonify(message="Категорії оновлено"), 200
 
 
@@ -228,7 +228,7 @@ def create_or_update_dish_endpoint():
     except ValidationError as e:
         return jsonify(detail=str(e)), 422
 
-    cache.delete(MENU_CACHE_KEY)
+    cache.delete(CacheNamespace.MENU)
     return jsonify(message=f"Страву з кодом {dish.code} збережено"), 200
 
 

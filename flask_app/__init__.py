@@ -4,11 +4,15 @@ configure_logging()
 
 import logging
 from flask import Flask, g
+
 from flask_app.blueprints import register_blueprints
-from flask_app.extensions import cache, limiter, jwt
+from flask_app.extensions import cache, limiter, jwt, redis_client
 from infrastructure.db.engine import engine, SessionLocal
 from infrastructure.db.base import Base
 from flask_app.config import Config
+from domain.core.settings import settings
+from domain.core.constants import RedisPrefix
+
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +21,22 @@ def create_app(base_config='domain.core.settings.Settings', auth_config='flask_a
     app = Flask(__name__, static_folder='../frontend', static_url_path='/')
     app.config.from_object(base_config)
     app.config.from_object(auth_config)
+
+    if redis_client:
+        app.config.update(
+            CACHE_TYPE="RedisCache",
+            CACHE_REDIS_URL=settings.REDIS_URL,
+            CACHE_KEY_PREFIX=f"{RedisPrefix.CACHE}:"
+        )
+
+        logger.info("Cache_initialized_with_Redis")
+
+    else:
+        app.config.update(
+            CACHE_TYPE="SimpleCache",
+        )
+
+        logger.warning("Redis_unavailable_using_SimpleCache")
     cache.init_app(app)
     limiter.init_app(app)
     jwt.init_app(app)
@@ -37,7 +57,7 @@ def create_app(base_config='domain.core.settings.Settings', auth_config='flask_a
             return
 
         try:
-            if exc is not None or getattr(db, "rollback_needed", False):
+            if exc  or getattr(db, "rollback_needed", False):
                 db.rollback()
             else:
                 db.commit()
