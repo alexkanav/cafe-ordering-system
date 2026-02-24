@@ -17,7 +17,7 @@ class DishSchema(BaseModel):
     @classmethod
     def convert_extras(cls, value):
         if isinstance(value, list):
-            return {extra.name_ua: extra.price for extra in value}
+            return {extra.name: extra.price for extra in value}
         return value
 
 

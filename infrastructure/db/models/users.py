@@ -44,11 +44,10 @@ class Dish(Base):
     __tablename__ = 'dishes'
 
     code: Mapped[str] = mapped_column(String(4), primary_key=True)
-    name_en: Mapped[str] = mapped_column(String(30))
+    name: Mapped[str] = mapped_column(String(50))
     category_id: Mapped[int] = mapped_column(ForeignKey('categories.id'))
     is_popular: Mapped[bool] = mapped_column(default=False, index=True)
     is_recommended: Mapped[bool] = mapped_column(default=False, index=True)
-    name: Mapped[str] = mapped_column(String(50))
     price: Mapped[int] = mapped_column(default=0)
     description: Mapped[str] = mapped_column(String(500))
     image_link: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -86,7 +85,6 @@ class DishExtra(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(20), unique=True)
-    name_ua: Mapped[str] = mapped_column(String(20))
     price: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
 
     dishes: Mapped[list["Dish"]] = relationship(
