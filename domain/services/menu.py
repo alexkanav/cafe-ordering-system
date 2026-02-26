@@ -63,20 +63,19 @@ def create_or_update_dish(db: Session, dish_data: schemas.DishUpdateSchema) -> N
 
 
 def add_dish_like(db: Session, user_id: int, dish_code: str) -> None:
-    with db.begin():
-        dish = db.scalar(
-            select(Dish)
-            .where(Dish.code == dish_code)
-            .with_for_update()
-        )
+    dish = db.scalar(
+        select(Dish)
+        .where(Dish.code == dish_code)
+        .with_for_update()
+    )
 
-        if not dish:
-            raise NotFoundError("Страву не знайдено")
+    if not dish:
+        raise NotFoundError("Страву не знайдено")
 
-        db.add(DishLike(user_id=user_id, dish_code=dish_code))
-        db.flush()
+    db.add(DishLike(user_id=user_id, dish_code=dish_code))
+    db.flush()
 
-        dish.likes += 1
+    dish.likes += 1
 
 
 def get_dishes(db: Session, include_unpriced: bool) -> schemas.GetDishesResponseSchema:
