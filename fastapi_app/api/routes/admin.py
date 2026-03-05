@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 import logging
 
 from domain.core.constants import CacheNamespace
-from domain.core.errors import NotFoundError, ConflictError, DomainValidationError, DomainError
+from domain.core.errors import NotFoundError, ConflictError, DomainError
 from fastapi_app.dependencies.db import get_db
 from domain import services
 from fastapi_app.auth.jwt import create_access_token
@@ -309,14 +309,16 @@ def upload_image(
 ):
     try:
         filename = process_image_upload(image, current_user.id)
-    except (ConflictError, DomainValidationError, DomainError) as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+
     except NotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+    except DomainError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
