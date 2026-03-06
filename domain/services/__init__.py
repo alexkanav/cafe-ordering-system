@@ -4,4 +4,4 @@ from .menu import update_categories, create_or_update_dish, add_dish_like, get_d
 from .notification import get_notifications, mark_notification_as_read, count_unread_notifications
 from .order import get_orders, complete_order, create_order, count
 from .statistic import get_sales_summary, get_dish_order_stats
-from .user import create_user, register_staff, authenticate_staff, sessions, total_amount
+from .user import create_user, register_staff, authenticate_staff, sessions, total_amount, user_exists_for_role
