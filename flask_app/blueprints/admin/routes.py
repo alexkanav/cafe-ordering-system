@@ -187,10 +187,12 @@ def upload_image_endpoint(user_id: int):
     file = request.files['image']
     try:
         filename = process_image_upload(file, user_id)
-    except (ConflictError, DomainValidationError, DomainError) as e:
-        return jsonify(detail=str(e)), 400
+
     except NotFoundError as e:
         return jsonify(detail=str(e)), 404
+
+    except (ConflictError, DomainValidationError, DomainError) as e:
+        return jsonify(detail=str(e)), 400
 
     return jsonify(filename=filename), 201
 
