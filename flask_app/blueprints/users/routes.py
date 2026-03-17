@@ -75,7 +75,7 @@ def get_user_menu():
 @users_bp.route('/discount', methods=['GET'])
 @role_required()
 def get_discount_endpoint(user_id: int):
-    user_total_amount = services.total_amount(g.db, user_id)
+    user_total_amount = services.get_total_amount(g.db, user_id)
     discount = calculate_discount(user_total_amount)
     return jsonify(discount=discount), 200
 

@@ -27,7 +27,7 @@ def authenticate_staff(db: Session, data: LoginRequestSchema) -> Staff | None:
     return None
 
 
-def sessions(db: Session, user_id) -> int:
+def get_user_sessions_count(db: Session, user_id: int) -> int:
     stmt = select(func.count(Order.id)).filter_by(user_id=user_id)
     return db.scalar(stmt) or 0
 
@@ -39,7 +39,7 @@ def create_user(db: Session) -> int:
     return user.id
 
 
-def total_amount(db: Session, user_id) -> int:
+def get_total_amount(db: Session, user_id: int) -> int:
     stmt = select(func.sum(Order.final_cost)).filter_by(user_id=user_id)
     return db.scalar(stmt) or 0
 

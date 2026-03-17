@@ -2,7 +2,7 @@ from .notification import NotificationSchema, NotificationCreateSchema, Notifica
 from .menu import DishSchema, DishUpdateSchema, UserMenuResponseSchema, GetDishesResponseSchema, \
     GetCategoriesResponseSchema, StaffMenuResponseSchema, CategoryNamesSchema, FeaturedDishes
 from .order import OrderSchema, OrderCreateSchema, OrderOperationResultSchema, OrderResponseSchema, \
-    OrderCountResponseSchema
+    OrderCountResponseSchema, OrderItemSchema
 from .coupon import CouponSchema, CouponCreateSchema
 from .comment import CommentSchema, CommentResponseSchema, CommentCreateSchema
 from .user import CurrentUserSchema, DiscountSchema, UserSchema, UserResponseSchema

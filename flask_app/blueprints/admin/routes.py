@@ -123,7 +123,7 @@ def get_orders_endpoint():
 
 @admin_bp.route('/orders/count', methods=['GET'])
 def get_orders_count_endpoint():
-    count = services.count(g.db)
+    count = services.get_orders_count(g.db)
     return jsonify(count=count), 200
 
 

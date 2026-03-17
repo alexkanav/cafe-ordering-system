@@ -269,7 +269,7 @@ def get_orders_endpoint(
 
 @router.get('/orders/count', response_model=schemas.OrderCountResponseSchema)
 def get_orders_count_endpoint(db: Session = Depends(get_db)):
-    count = services.count(db)
+    count = services.get_orders_count(db)
     return {"count": count}
 
 

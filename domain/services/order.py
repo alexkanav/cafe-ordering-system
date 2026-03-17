@@ -28,7 +28,7 @@ def complete_order(db: Session, order_id: int, employee_id: int) -> None:
     order.completed_by = employee_id
     order.completed_at = datetime.utcnow()
 
-def count(db: Session) -> int:
+def get_orders_count(db: Session) -> int:
     return db.scalar(select(func.count()).select_from(Order)) or 0
 
 

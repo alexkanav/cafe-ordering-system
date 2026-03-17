@@ -115,7 +115,7 @@ def get_discount_endpoint(
         current_user: schemas.CurrentUserSchema = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
-    user_total_amount = services.total_amount(db, current_user.id)
+    user_total_amount = services.get_total_amount(db, current_user.id)
     discount = calculate_discount(user_total_amount)
     return {"discount": discount}
 
