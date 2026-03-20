@@ -6,9 +6,9 @@ const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const handleError = (error, setFieldErrors) => {
   if (error?.status === 401) {
-    toast.error(error.detail || "Не вірний Логін або Пароль!");
+    toast.error(error.message || "Не вірний Логін або Пароль!");
   } else {
-    toast.error(error.detail || "Помилка з'єднання з сервером.");
+    toast.error(error.message || "Помилка з'єднання з сервером.");
   }
   setFieldErrors({});
 };
@@ -90,7 +90,7 @@ export async function checkAuth(role) {
     }
 
     toast.error(
-      error?.detail || "Не вдалося перевірити авторизацію."
+      error?.message || "Не вдалося перевірити авторизацію."
     );
     return null;
   }
@@ -101,7 +101,7 @@ export async function createUser() {
     const { data }  = await sendToServer('/api/users', null, 'POST');
     return data.user_id;
   } catch (error) {
-    toast.error(error.detail || "Помилка реєстрації нового користувача.");
+    toast.error(error.message || "Помилка реєстрації нового користувача.");
     return null;
   }
 }
