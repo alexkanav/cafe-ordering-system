@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from pydantic import ValidationError
 import logging
 
-from flask_app.extensions import cache
+from flask_app.extensions import cache, limiter
 from flask_app.security import role_required, require_active_staff
 from utils.images import process_image_upload
 from domain.core.constants import CacheNamespace
@@ -27,31 +27,20 @@ def get_me():
 
 
 @admin_bp.route("/auth/register", methods=["POST"])
+@limiter.limit("10 per hour")
 def register_endpoint():
     data = request.get_json(silent=True)
     if not data:
         return jsonify(detail="Invalid JSON"), 400
-
-    name = data.get("username")
-    email = data.get("email")
-    password = data.get("password")
-
-    if not all([name, email, password]):
-        return jsonify(detail="Заповніть всі поля."), 400
-
     try:
-        auth_data = schemas.RegisterRequestSchema.model_validate({
-            "username": name,
-            "email": email,
-            "password": password,
-        })
+        auth_data = schemas.RegisterRequestSchema.model_validate(data)
 
         user_id = services.register_staff(g.db, auth_data)
-        logger.info(f"registered_user user={user_id} email={email}")
+        logger.info(f"registered_user user={user_id}")
 
     except IntegrityError:
         g.db.rollback_needed = True
-        return jsonify(detail=f"Email {email} вже використана"), 409
+        return jsonify(detail=f"Email {data['email']} вже використана"), 409
 
     except SQLAlchemyError:
         g.db.rollback_needed = True
@@ -71,19 +60,14 @@ def register_endpoint():
 
 
 @admin_bp.route('/auth/login', methods=['POST'])
+@limiter.limit("5 per hour", key_func=lambda: (request.get_json(silent=True) or {}).get("email", ""))
 def login_endpoint():
     data = request.get_json(silent=True)
     if not data:
         return jsonify(detail="Invalid JSON"), 400
 
-    email = data.get('email')
-    password = data.get('password')
-
     try:
-        auth_data = schemas.LoginRequestSchema.model_validate({
-            "email": email,
-            "password": password,
-        })
+        auth_data = schemas.LoginRequestSchema.model_validate(data)
     except ValidationError as e:
         return jsonify(detail=str(e)), 422
 
@@ -129,7 +113,7 @@ def get_orders_count_endpoint():
 
 @admin_bp.route('/orders/<int:order_id>/complete', methods=['PATCH'])
 @role_required(UserRole.staff)
-def complete_order_endpoint(order_id, user_id):
+def complete_order_endpoint(order_id: int, user_id: int):  # get user_id from role_required
     try:
         services.complete_order(g.db, order_id, user_id)
     except NotFoundError as e:
@@ -165,10 +149,10 @@ def statistics_endpoint():
     except ValueError:
         return jsonify(detail="Invalid date format. Use YYYY-MM-DD"), 400
 
-    return {
-        "sales_summary": sales_summary.model_dump(),
-        "dish_order_stats": dish_order_stats.model_dump(),
-    }, 200
+    return jsonify(
+        sales_summary=sales_summary.model_dump(),
+        dish_order_stats=dish_order_stats.model_dump(),
+    ), 200
 
 
 @admin_bp.route('/menu', methods=['GET'])
@@ -203,7 +187,6 @@ def update_categories_endpoint():
     data = request.get_json(silent=True)
     if not data:
         return jsonify(detail="Invalid JSON"), 400
-    print(14, data.get("category_names"), 15, data)
     if not isinstance(data.get("category_names"), list) or \
             not all(isinstance(c, str) for c in data["category_names"]):
         return jsonify(detail="Невірний формат категорій"), 400
@@ -299,7 +282,7 @@ def create_coupon_endpoint():
 
 @admin_bp.route('/coupons/<int:coupon_id>/deactivate', methods=['PATCH'])
 @role_required(UserRole.staff)
-def deactivate_coupon_endpoint(coupon_id):
+def deactivate_coupon_endpoint(coupon_id: int):
     try:
         services.deactivate_coupon(g.db, coupon_id)
         logger.info(f"Coupon_deactivated id={coupon_id}")

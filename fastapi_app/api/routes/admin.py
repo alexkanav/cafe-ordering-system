@@ -1,5 +1,5 @@
 from anyio import from_thread
-from fastapi import APIRouter, Depends, status, HTTPException, Response, Query, UploadFile, File
+from fastapi import APIRouter, Depends, status, HTTPException, Response, Query, UploadFile, File, Request
 from fastapi_cache import FastAPICache
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -8,6 +8,7 @@ import logging
 from domain.core.constants import CacheNamespace
 from domain.core.errors import NotFoundError, ConflictError, DomainError
 from fastapi_app.dependencies.db import get_db
+from fastapi_app.core.limiter import limiter
 from domain import services
 from fastapi_app.auth.jwt import create_access_token
 from fastapi_app.dependencies.auth import has_required_role, require_active_staff
@@ -29,7 +30,9 @@ def get_me(
 
 
 @router.post('/auth/register', status_code=status.HTTP_201_CREATED, response_model=schemas.UserResponseSchema)
+@limiter.limit("10/hour")
 def register_endpoint(
+        request: Request,
         auth_data: schemas.RegisterRequestSchema,
         response: Response,
         db: Session = Depends(get_db),
@@ -59,7 +62,9 @@ def register_endpoint(
 
 
 @router.post("/auth/login", response_model=schemas.UserResponseSchema)
+@limiter.limit("5/hour")
 def login_endpoint(
+        request: Request,
         auth_data: schemas.LoginRequestSchema,
         response: Response,
         db: Session = Depends(get_db),
