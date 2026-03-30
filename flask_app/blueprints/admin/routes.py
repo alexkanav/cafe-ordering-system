@@ -294,3 +294,33 @@ def deactivate_coupon_endpoint(coupon_id: int):
         return jsonify(detail=str(e)), 409
 
     return jsonify(message=f"Купон id={coupon_id} деактивовано"), 200
+
+
+@admin_bp.route('/comments/<int:comment_id>', methods=['PATCH'])
+@role_required(UserRole.moderator)
+def update_comment_status_endpoint(comment_id: int, user_id: int):
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify(detail="Invalid JSON"), 400
+
+    try:
+        payload = schemas.CommentStatusUpdate.model_validate(data)
+        new_status = payload.status
+
+        services.update_comment_status(g.db, user_id, comment_id, new_status)
+
+    except ValidationError as e:
+        return jsonify(detail=e.errors()), 422
+
+    except NotFoundError as e:
+        g.db.rollback_needed = True
+        return jsonify(detail=str(e)), 404
+
+    except Exception as e:
+        g.db.rollback_needed = True
+        logger.exception(f"Failed_to_update_comment id={comment_id}")
+        return jsonify(detail=str(e)), 500
+
+    cache.delete(CacheNamespace.COMMENTS)
+
+    return jsonify(message=f"Коментар {comment_id} змінив статус на {new_status.value}")

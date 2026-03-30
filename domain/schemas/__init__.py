@@ -4,7 +4,7 @@ from .menu import DishSchema, DishUpdateSchema, UserMenuResponseSchema, GetDishe
 from .order import OrderSchema, OrderCreateSchema, OrderOperationResultSchema, OrderResponseSchema, \
     OrderCountResponseSchema, OrderItemSchema
 from .coupon import CouponSchema, CouponCreateSchema
-from .comment import CommentSchema, CommentResponseSchema, CommentCreateSchema
+from .comment import CommentSchema, CommentResponseSchema, CommentCreateSchema, CommentStatusUpdate
 from .user import CurrentUserSchema, DiscountSchema, UserSchema, UserResponseSchema
 from .errors import ErrorResponseSchema, RateLimitErrorSchema
 from .auth import TokenPayload, RegisterRequestSchema, LoginRequestSchema

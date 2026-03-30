@@ -1,5 +1,5 @@
-from anyio import from_thread
-from fastapi import APIRouter, Depends, status, HTTPException, Response, Query, UploadFile, File, Request
+from fastapi import APIRouter, Depends, status, HTTPException, Response, Query, UploadFile, File, Request, \
+    BackgroundTasks
 from fastapi_cache import FastAPICache
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -103,6 +103,7 @@ def get_menu_endpoint(
 @router.patch('/categories', response_model=schemas.MessageResponseSchema)
 def update_categories_endpoint(
         data: schemas.CategoryNamesSchema,
+        background_tasks: BackgroundTasks,
         _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
         db: Session = Depends(get_db),
 ):
@@ -115,7 +116,7 @@ def update_categories_endpoint(
         logger.exception("Failed_to_update_categories")
         raise
 
-    from_thread.run(FastAPICache.clear, CacheNamespace.MENU)
+    background_tasks.add_task(FastAPICache.clear, CacheNamespace.MENU)
 
     return {"message": "Категорії оновлено"}
 
@@ -123,6 +124,7 @@ def update_categories_endpoint(
 @router.post('/dishes', response_model=schemas.MessageResponseSchema)
 def create_or_update_dish_endpoint(
         data: schemas.DishUpdateSchema,
+        background_tasks: BackgroundTasks,
         _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
         db: Session = Depends(get_db),
 ):
@@ -135,7 +137,7 @@ def create_or_update_dish_endpoint(
         logger.exception("Failed_to_update_dish")
         raise
 
-    from_thread.run(FastAPICache.clear, CacheNamespace.MENU)
+    background_tasks.add_task(FastAPICache.clear, CacheNamespace.MENU)
 
     return {"message": f"Страву {data.code} оновлено"}
 
@@ -167,7 +169,7 @@ def mark_notification_as_read_endpoint(
         )
     except Exception:
         db.rollback()
-        logger.exception("Unexpected_error")
+        logger.exception(f"Failed_to_mark_notification id={notification_id}")
         raise
 
     return {"message": f"Сповіщення:{notification_id} помічене як прочитане"}
@@ -225,7 +227,7 @@ def create_coupon_endpoint(
         )
     except Exception:
         db.rollback()
-        logger.exception("Unexpected_error")
+        logger.exception(f"Failed_to_create_coupon")
         raise
 
     return {"message": f'Додано купон id:{coupon_id}'}
@@ -255,7 +257,7 @@ def deactivate_coupon_endpoint(
         )
     except Exception:
         db.rollback()
-        logger.exception("Unexpected_error")
+        logger.exception(f"Failed_to_deactivate_coupon id={coupon_id}")
         raise
 
     return {"message": f"Купон id:{coupon_id} деактивовано"}
@@ -301,7 +303,7 @@ def complete_order_endpoint(
         )
     except Exception:
         db.rollback()
-        logger.exception("Unexpected_error")
+        logger.exception(f"Failed_to_complete_order id={order_id}")
         raise
 
     return {"message": f"Замовлення:{order_id} виконано."}
@@ -328,3 +330,29 @@ def upload_image(
         )
 
     return {"filename": filename}
+
+
+@router.patch('/comments/{comment_id}', response_model=schemas.MessageResponseSchema)
+def update_comment_status_endpoint(
+        comment_id: int,
+        data: schemas.CommentStatusUpdate,
+        background_tasks: BackgroundTasks,
+        current_user: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.moderator)),
+        db: Session = Depends(get_db),
+):
+    new_status = data.status
+
+    try:
+        services.update_comment_status(db, current_user.id, comment_id, new_status)
+        db.commit()
+    except NotFoundError as e:
+        db.rollback()
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception:
+        db.rollback()
+        logger.exception(f"Failed_to_update_comment id={comment_id}")
+        raise
+
+    background_tasks.add_task(FastAPICache.clear, CacheNamespace.COMMENTS)
+
+    return {"message": f"Коментар {comment_id} змінив статус на {new_status.value}"}

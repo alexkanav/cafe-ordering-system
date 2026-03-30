@@ -1,4 +1,4 @@
-from .comment import get_comments, add_comment
+from .comment import get_comments, create_comment, update_comment_status
 from .coupon import create_coupon, check_coupon, get_coupons, deactivate_coupon
 from .menu import update_categories, create_or_update_dish, add_dish_like, get_dishes, get_categories, build_user_menu, build_staff_menu
 from .notification import get_notifications, mark_notification_as_read, count_unread_notifications

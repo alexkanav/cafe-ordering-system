@@ -27,6 +27,7 @@ class Staff(Base):
     )
 
     orders: Mapped[list["Order"]] = relationship("Order", back_populates="staff")
+    comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="moderator")
 
     @property
     def password(self):

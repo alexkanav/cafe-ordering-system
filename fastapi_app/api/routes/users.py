@@ -80,14 +80,14 @@ def get_comments_endpoint(db: Session = Depends(get_db)):
     },
 )
 @limiter.limit("2/hour")
-def add_comment_endpoint(
+def create_comment_endpoint(
         request: Request,
         comment_data: schemas.CommentCreateSchema,
         current_user: schemas.CurrentUserSchema = Depends(get_current_user),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
 ):
     try:
-        services.add_comment(db, current_user.id, comment_data)
+        comment_id = services.create_comment(db, current_user.id, comment_data)
         db.commit()
 
     except SQLAlchemyError:
@@ -98,7 +98,7 @@ def add_comment_endpoint(
             detail="Не вдалося додати коментар"
         )
 
-    return {"message": "Ваш коментар надіслано на модерацію"}
+    return {"message": f"Ваш коментар {comment_id} надіслано на модерацію"}
 
 
 @router.get("/menu", response_model=schemas.UserMenuResponseSchema)

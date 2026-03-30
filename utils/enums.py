@@ -11,4 +11,11 @@ class NotificationType(str, Enum):
 class UserRole(str, Enum):
     client = "client"
     staff = "staff"
+    moderator = "moderator"
     admin = "admin"
+
+
+class CommentStatus(str, Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"

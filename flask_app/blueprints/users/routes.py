@@ -50,7 +50,7 @@ def get_comments_endpoint():
 @users_bp.route('/comments', methods=['POST'])
 @role_required()
 @limiter.limit("2 per hour")
-def add_comment_endpoint(user_id: int):
+def create_comment_endpoint(user_id: int):
     json_data = request.get_json(silent=True)
     if not json_data:
         return jsonify(detail="No comment data received"), 400
@@ -60,9 +60,9 @@ def add_comment_endpoint(user_id: int):
     except ValidationError as e:
         return jsonify(detail=str(e)), 422
 
-    services.add_comment(g.db, user_id, comment)
+    comment_id = services.create_comment(g.db, user_id, comment)
 
-    return jsonify(message="Ваш коментар надіслано на модерацію"), 201
+    return jsonify(message=f"Ваш коментар: {comment_id} надіслано на модерацію"), 201
 
 
 @users_bp.route('/menu', methods=['GET'])

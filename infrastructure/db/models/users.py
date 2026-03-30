@@ -1,8 +1,9 @@
 from datetime import datetime, date
-from sqlalchemy import Table, Column, ForeignKey, DateTime, Date, String, Integer, JSON, Numeric
+from sqlalchemy import Table, Column, ForeignKey, DateTime, Date, String, Integer, JSON, Numeric, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from infrastructure.db.base import Base
+from utils.enums import CommentStatus
 
 dish_extra_link = Table(
     "dish_extra_link",
@@ -128,10 +129,25 @@ class Comment(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user_name: Mapped[str] = mapped_column(String(20))
-    comment_date_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     comment_text: Mapped[str] = mapped_column(String(200))
+    status: Mapped[CommentStatus] = mapped_column(
+        Enum(CommentStatus, native_enum=False),
+        default=CommentStatus.pending,
+        nullable=False
+    )
+    moderator_id: Mapped[int] = mapped_column(ForeignKey("staff.id"), nullable=True)
+    moderated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
 
     user: Mapped["User"] = relationship(back_populates="comments")
+    moderator: Mapped["Staff"] = relationship(
+        "Staff",
+        back_populates="comments",
+        foreign_keys=[moderator_id]
+    )
 
     def __repr__(self) -> str:
         return f"<Comment {self.id}>"
