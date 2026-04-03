@@ -10,7 +10,7 @@ from utils.discounts import calculate_discount
 from domain import schemas
 from domain.core.errors import NotFoundError, ConflictError, DomainValidationError
 from domain.core.constants import CacheNamespace
-from flask_app.security import role_required
+from flask_app.security import require_active_user, role_required
 from utils.enums import UserRole
 
 logger = logging.getLogger(__name__)
@@ -20,8 +20,9 @@ users_bp = Blueprint('users', __name__, url_prefix='/api/users')
 
 @users_bp.route('/me', methods=['GET'])
 @role_required()
-def get_me(user_id: int):
-    return jsonify(id=user_id, role=UserRole.client.value), 200
+@require_active_user()
+def get_me():
+    return jsonify(g.current_user), 200
 
 
 @users_bp.route('/', methods=['POST'])
@@ -50,7 +51,7 @@ def get_comments_endpoint():
 @users_bp.route('/comments', methods=['POST'])
 @role_required()
 @limiter.limit("2 per hour")
-def create_comment_endpoint(user_id: int):
+def create_comment_endpoint():
     json_data = request.get_json(silent=True)
     if not json_data:
         return jsonify(detail="No comment data received"), 400
@@ -60,7 +61,7 @@ def create_comment_endpoint(user_id: int):
     except ValidationError as e:
         return jsonify(detail=str(e)), 422
 
-    comment_id = services.create_comment(g.db, user_id, comment)
+    comment_id = services.create_comment(g.db, g.current_user["id"], comment)
 
     return jsonify(message=f"Ваш коментар: {comment_id} надіслано на модерацію"), 201
 
@@ -74,15 +75,15 @@ def get_user_menu():
 
 @users_bp.route('/discount', methods=['GET'])
 @role_required()
-def get_discount_endpoint(user_id: int):
-    user_total_amount = services.get_total_amount(g.db, user_id)
+def get_discount_endpoint():
+    user_total_amount = services.get_total_amount(g.db, g.current_user["id"])
     discount = calculate_discount(user_total_amount)
     return jsonify(discount=discount), 200
 
 
 @users_bp.route('/order', methods=['POST'])
 @role_required()
-def place_order_endpoint(user_id: int):
+def place_order_endpoint():
     json_data = request.get_json(silent=True)
     if not json_data:
         return jsonify(detail="No order data received"), 400
@@ -93,13 +94,14 @@ def place_order_endpoint(user_id: int):
     except ValidationError as e:
         return jsonify(detail=str(e)), 422
 
-    order = services.create_order(g.db, order_data, user_id)
+    order = services.create_order(g.db, order_data, g.current_user["id"])
     return jsonify(order.model_dump()), 201
 
 
 @users_bp.route('/dishes/<dish_code>/like', methods=['POST'])
 @role_required()
-def like_dish_endpoint(dish_code: str, user_id: int):
+def like_dish_endpoint(dish_code: str):
+    user_id = g.current_user["id"]
     try:
         services.add_dish_like(g.db, user_id, dish_code)
         logger.info(f"User_liked_dish user={user_id} dish={dish_code}")
@@ -118,9 +120,9 @@ def like_dish_endpoint(dish_code: str, user_id: int):
 
 @users_bp.route('/coupon/<coupon_code>', methods=['POST'])
 @role_required()
-def check_coupon_endpoint(coupon_code: str, user_id: int):
+def check_coupon_endpoint(coupon_code: str):
     try:
-        discount = services.check_coupon(g.db, coupon_code, user_id)
+        discount = services.check_coupon(g.db, coupon_code, g.current_user["id"])
     except NotFoundError as e:
         g.db.rollback_needed = True
         return jsonify(detail=str(e)), 404

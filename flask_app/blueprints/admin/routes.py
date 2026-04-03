@@ -1,12 +1,12 @@
 from datetime import datetime
 from flask import Blueprint, request, jsonify, g
-from flask_jwt_extended import create_access_token, set_access_cookies, unset_jwt_cookies, jwt_required
+from flask_jwt_extended import create_access_token, set_access_cookies, unset_jwt_cookies
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from pydantic import ValidationError
 import logging
 
 from flask_app.extensions import cache, limiter
-from flask_app.security import role_required, require_active_staff
+from flask_app.security import role_required, require_active_user
 from utils.images import process_image_upload
 from domain.core.constants import CacheNamespace
 from domain.core.errors import NotFoundError, ConflictError, DomainError, DomainValidationError
@@ -20,10 +20,10 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
 
 @admin_bp.route('/me', methods=['GET'])
-@jwt_required()
+@role_required(UserRole.staff)
+@require_active_user()
 def get_me():
-    user_id = require_active_staff(g.db)
-    return jsonify(id=user_id, role=UserRole.staff.value), 200
+    return jsonify(g.current_user), 200
 
 
 @admin_bp.route("/auth/register", methods=["POST"])
@@ -92,7 +92,7 @@ def logout_endpoint():
 
 
 @admin_bp.route('/orders', methods=['GET'])
-@role_required(UserRole.staff)
+@role_required(UserRole.staff, inject_user=False)
 def get_orders_endpoint():
     only_uncompleted = request.args.get(
         'only_uncompleted',
@@ -113,9 +113,9 @@ def get_orders_count_endpoint():
 
 @admin_bp.route('/orders/<int:order_id>/complete', methods=['PATCH'])
 @role_required(UserRole.staff)
-def complete_order_endpoint(order_id: int, user_id: int):  # get user_id from role_required
+def complete_order_endpoint(order_id: int):
     try:
-        services.complete_order(g.db, order_id, user_id)
+        services.complete_order(g.db, order_id, g.current_user["id"])
     except NotFoundError as e:
         g.db.rollback_needed = True
         return jsonify(detail=str(e)), 404
@@ -127,7 +127,7 @@ def complete_order_endpoint(order_id: int, user_id: int):  # get user_id from ro
 
 
 @admin_bp.route("/statistics", methods=["GET"])
-@role_required(UserRole.staff)
+@role_required(UserRole.staff, inject_user=False)
 def statistics_endpoint():
     start_raw = request.args.get("startDate")
     end_raw = request.args.get("endDate")
@@ -156,7 +156,7 @@ def statistics_endpoint():
 
 
 @admin_bp.route('/menu', methods=['GET'])
-@role_required(UserRole.staff)
+@role_required(UserRole.staff, inject_user=False)
 def get_menu_endpoint():
     menu = services.build_staff_menu(g.db)
     return jsonify(menu.model_dump()), 200
@@ -164,13 +164,13 @@ def get_menu_endpoint():
 
 @admin_bp.route('/images', methods=['POST'])
 @role_required(UserRole.staff)
-def upload_image_endpoint(user_id: int):
+def upload_image_endpoint():
     if 'image' not in request.files:
         return jsonify(detail='No image uploaded'), 400
 
     file = request.files['image']
     try:
-        filename = process_image_upload(file, user_id)
+        filename = process_image_upload(file, g.current_user["id"])
 
     except NotFoundError as e:
         return jsonify(detail=str(e)), 404
@@ -182,7 +182,7 @@ def upload_image_endpoint(user_id: int):
 
 
 @admin_bp.route('/categories', methods=['PATCH'])
-@role_required(UserRole.staff)
+@role_required(UserRole.staff, inject_user=False)
 def update_categories_endpoint():
     data = request.get_json(silent=True)
     if not data:
@@ -199,7 +199,7 @@ def update_categories_endpoint():
 
 
 @admin_bp.route('/dishes', methods=['POST'])
-@role_required(UserRole.staff)
+@role_required(UserRole.staff, inject_user=False)
 def create_or_update_dish_endpoint():
     data = request.get_json(silent=True)
     if not data:
@@ -218,7 +218,7 @@ def create_or_update_dish_endpoint():
 
 
 @admin_bp.route('/notifications', methods=['GET'])
-@role_required(UserRole.staff)
+@role_required(UserRole.staff, inject_user=False)
 def get_notifications_endpoint():
     only_unread = request.args.get(
         'only_unread',
@@ -230,7 +230,7 @@ def get_notifications_endpoint():
 
 
 @admin_bp.route('/notifications/unread/count', methods=['GET'])
-@role_required(UserRole.staff)
+@role_required(UserRole.staff, inject_user=False)
 def get_unread_notification_count_endpoint():
     unread_notifications_count = services.count_unread_notifications(g.db)
     return jsonify(unread_notif_count=unread_notifications_count), 200
@@ -238,7 +238,8 @@ def get_unread_notification_count_endpoint():
 
 @admin_bp.route('/notifications/<int:notification_id>', methods=["PATCH"])
 @role_required(UserRole.staff)
-def mark_notification_read_endpoint(notification_id: int, user_id: int):
+def mark_notification_read_endpoint(notification_id: int):
+    user_id = g.current_user["id"]
     try:
         services.mark_notification_as_read(g.db, notification_id, user_id)
     except NotFoundError as e:
@@ -252,14 +253,14 @@ def mark_notification_read_endpoint(notification_id: int, user_id: int):
 
 
 @admin_bp.route('/coupons', methods=['GET'])
-@role_required(UserRole.staff)
+@role_required(UserRole.staff, inject_user=False)
 def get_coupons_endpoint():
     coupons = services.get_coupons(g.db)
     return jsonify([c.model_dump() for c in coupons]), 200
 
 
 @admin_bp.route('/coupons', methods=['POST'])
-@role_required(UserRole.staff)
+@role_required(UserRole.staff, inject_user=False)
 def create_coupon_endpoint():
     data = request.get_json(silent=True)
     if not data:
@@ -281,7 +282,7 @@ def create_coupon_endpoint():
 
 
 @admin_bp.route('/coupons/<int:coupon_id>/deactivate', methods=['PATCH'])
-@role_required(UserRole.staff)
+@role_required(UserRole.staff, inject_user=False)
 def deactivate_coupon_endpoint(coupon_id: int):
     try:
         services.deactivate_coupon(g.db, coupon_id)
@@ -298,7 +299,7 @@ def deactivate_coupon_endpoint(coupon_id: int):
 
 @admin_bp.route('/comments/<int:comment_id>', methods=['PATCH'])
 @role_required(UserRole.moderator)
-def update_comment_status_endpoint(comment_id: int, user_id: int):
+def update_comment_status_endpoint(comment_id: int):
     data = request.get_json(silent=True)
     if not data:
         return jsonify(detail="Invalid JSON"), 400
@@ -307,7 +308,7 @@ def update_comment_status_endpoint(comment_id: int, user_id: int):
         payload = schemas.CommentStatusUpdate.model_validate(data)
         new_status = payload.status
 
-        services.update_comment_status(g.db, user_id, comment_id, new_status)
+        services.update_comment_status(g.db, g.current_user["id"], comment_id, new_status)
 
     except ValidationError as e:
         return jsonify(detail=e.errors()), 422

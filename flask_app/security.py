@@ -1,44 +1,40 @@
-from flask import abort
+from flask import abort, g
 from functools import wraps
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
-from sqlalchemy.orm import Session
-import inspect
-import logging
 
 from domain.core.constants import ROLE_ORDER
 from utils.enums import UserRole
-from domain.services.user import user_exists_for_role
-
-logger = logging.getLogger(__name__)
+from domain import services
 
 
-def has_required_role(required: UserRole) -> bool:
-    """Check JWT role."""
-    try:
-        role_value = get_jwt().get("role")
-        if not role_value:
-            logger.warning("Missing role claim in JWT")
-            return False
-        role = UserRole(role_value)
-    except (ValueError, TypeError):
-        logger.warning("Invalid or missing role claim in JWT", exc_info=True)
-        return False
-    return ROLE_ORDER.get(role, 0) >= ROLE_ORDER[required]
+def role_required(required_role: UserRole = UserRole.client, inject_user=True):
+    """Validate role and optionally store current_user in g."""
 
-
-def role_required(required_role: UserRole = UserRole.client):
     def decorator(fn):
-        sig = inspect.signature(fn)
-
         @wraps(fn)
         @jwt_required()
         def wrapper(*args, **kwargs):
-            if not has_required_role(required_role):
-                abort(403)
+            jwt_data = get_jwt()
 
-            if "user_id" in sig.parameters:
-                kwargs["user_id"] = int(get_jwt_identity())
+            role_value = jwt_data.get("role")
+            try:
+                role = UserRole(role_value)
+            except ValueError:
+                abort(403, description="INVALID_ROLE")
 
+            if ROLE_ORDER.get(role, 0) < ROLE_ORDER[required_role]:
+                abort(403, description="INSUFFICIENT_ROLE")
+
+            if inject_user:
+                try:
+                    user_id = int(get_jwt_identity())
+                except (TypeError, ValueError):
+                    abort(401, description="INVALID_IDENTITY")
+
+                g.current_user = {
+                    "id": user_id,
+                    "role": role,
+                }
             return fn(*args, **kwargs)
 
         return wrapper
@@ -46,9 +42,19 @@ def role_required(required_role: UserRole = UserRole.client):
     return decorator
 
 
-def require_active_staff(db: Session) -> int:
-    user_id = int(get_jwt_identity())
-    if not has_required_role(UserRole.staff) or not user_exists_for_role(db, user_id, UserRole.staff):
-        abort(403)
+def require_active_user():
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            user = getattr(g, "current_user", None)
+            if user is None:
+                abort(401, description="MISSING_AUTH_CONTEXT")
 
-    return user_id
+            if not services.user_exists_for_role(g.db, user["id"], user["role"]):
+                abort(403, description="USER_NOT_FOUND")
+
+            return fn(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
