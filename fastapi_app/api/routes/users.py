@@ -9,7 +9,7 @@ from domain.core.constants import RedisPrefix, CacheNamespace, CacheKey
 from fastapi_app.core.limiter import limiter
 from fastapi_app.dependencies.db import get_db
 from domain import services
-from fastapi_app.dependencies.auth import get_current_user
+from fastapi_app.dependencies.auth import get_current_user, require_valid_user
 from fastapi_app.auth.jwt import create_access_token
 from fastapi_app.auth.cookies import set_auth_cookie
 from domain import schemas
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/me", response_model=schemas.CurrentUserSchema)
 def get_me(
-        current_user: schemas.CurrentUserSchema = Depends(get_current_user),
+        current_user: schemas.CurrentUserSchema = Depends(require_valid_user(UserRole.client)),
 ):
     return current_user
 

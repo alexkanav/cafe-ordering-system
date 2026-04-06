@@ -5,7 +5,8 @@ from utils.enums import UserRole
 from fastapi_app.auth.jwt import decode_access_token
 from fastapi_app.dependencies.db import get_db
 from domain.schemas import CurrentUserSchema
-from domain.core.errors import NotFoundError, DomainValidationError, NOT_AUTHENTICATED, INSUFFICIENT_ROLE, USER_NOT_FOUND
+from domain.core.errors import NotFoundError, DomainValidationError, NOT_AUTHENTICATED, INSUFFICIENT_ROLE, \
+    USER_NOT_FOUND
 from domain.core.constants import ROLE_ORDER
 from domain.services.user import user_exists_for_role
 
@@ -33,7 +34,7 @@ def get_current_user(request: Request) -> CurrentUserSchema:
     )
 
 
-def has_required_role(min_role: UserRole):
+def require_min_role(min_role: UserRole):
     def dependency(
             current_user: CurrentUserSchema = Depends(get_current_user),
     ) -> CurrentUserSchema:
@@ -47,13 +48,16 @@ def has_required_role(min_role: UserRole):
     return dependency
 
 
-def require_active_staff(
-        current_user: CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
-        db: Session = Depends(get_db),
-) -> CurrentUserSchema:
-    if not user_exists_for_role(db, current_user.id, current_user.role):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=USER_NOT_FOUND,
-        )
-    return current_user
+def require_valid_user(role: UserRole):
+    def dependency(
+            current_user: CurrentUserSchema = Depends(require_min_role(role)),
+            db: Session = Depends(get_db),
+    ) -> CurrentUserSchema:
+        if not user_exists_for_role(db, current_user.id, current_user.role):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=USER_NOT_FOUND,
+            )
+        return current_user
+
+    return dependency

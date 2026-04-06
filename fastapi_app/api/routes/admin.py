@@ -11,7 +11,7 @@ from fastapi_app.dependencies.db import get_db
 from fastapi_app.core.limiter import limiter
 from domain import services
 from fastapi_app.auth.jwt import create_access_token
-from fastapi_app.dependencies.auth import has_required_role, require_active_staff
+from fastapi_app.dependencies.auth import require_min_role, require_valid_user
 from fastapi_app.auth.cookies import set_auth_cookie, clear_auth_cookie
 from domain import schemas
 from utils.enums import UserRole
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/me", response_model=schemas.CurrentUserSchema)
 def get_me(
-        current_user: schemas.CurrentUserSchema = Depends(require_active_staff),
+        current_user: schemas.CurrentUserSchema = Depends(require_valid_user(UserRole.staff)),
 ):
     return current_user
 
@@ -94,7 +94,7 @@ def logout_endpoint(response: Response):
 
 @router.get('/menu', response_model=schemas.StaffMenuResponseSchema)
 def get_menu_endpoint(
-        _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        _: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db),
 ):
     return services.build_staff_menu(db)
@@ -104,7 +104,7 @@ def get_menu_endpoint(
 def update_categories_endpoint(
         data: schemas.CategoryNamesSchema,
         background_tasks: BackgroundTasks,
-        _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        _: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db),
 ):
     try:
@@ -125,7 +125,7 @@ def update_categories_endpoint(
 def create_or_update_dish_endpoint(
         data: schemas.DishUpdateSchema,
         background_tasks: BackgroundTasks,
-        _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        _: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db),
 ):
     try:
@@ -145,7 +145,7 @@ def create_or_update_dish_endpoint(
 @router.get('/notifications', response_model=list[schemas.NotificationSchema])
 def get_notifications_endpoint(
         only_unread: bool = Query(False),
-        _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        _: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db)
 ):
     return services.get_notifications(only_unread, db)
@@ -154,7 +154,7 @@ def get_notifications_endpoint(
 @router.patch('/notifications/{notification_id}', response_model=schemas.MessageResponseSchema)
 def mark_notification_as_read_endpoint(
         notification_id: int,
-        current_user: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        current_user: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db)
 ):
     try:
@@ -177,7 +177,7 @@ def mark_notification_as_read_endpoint(
 
 @router.get("/notifications/unread/count", response_model=schemas.NotificationCountResponseSchema)
 def get_unread_notification_count_endpoint(
-        _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        _: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db),
 ):
     unread_notifications_count = services.count_unread_notifications(db)
@@ -187,7 +187,7 @@ def get_unread_notification_count_endpoint(
 @router.get('/statistics', response_model=schemas.StatisticsResponseSchema)
 def statistics_endpoint(
         params: schemas.StatisticsQuerySchema = Depends(),
-        _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        _: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db)
 ):
     if params.start_date > params.end_date:
@@ -202,7 +202,7 @@ def statistics_endpoint(
 
 @router.get('/coupons', response_model=list[schemas.CouponSchema])
 def get_coupons_endpoint(
-        _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        _: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db)
 ):
     return services.get_coupons(db)
@@ -211,7 +211,7 @@ def get_coupons_endpoint(
 @router.post('/coupons', status_code=status.HTTP_201_CREATED, response_model=schemas.MessageResponseSchema)
 def create_coupon_endpoint(
         coupon_data: schemas.CouponCreateSchema,
-        _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        _: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db)
 ):
     try:
@@ -236,7 +236,7 @@ def create_coupon_endpoint(
 @router.patch("/coupons/{coupon_id}/deactivate", response_model=schemas.MessageResponseSchema)
 def deactivate_coupon_endpoint(
         coupon_id: int,
-        _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        _: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db),
 ):
     try:
@@ -266,7 +266,7 @@ def deactivate_coupon_endpoint(
 @router.get('/orders', response_model=schemas.OrderResponseSchema)
 def get_orders_endpoint(
         only_uncompleted: bool = Query(True),
-        _: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        _: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db),
 ):
     orders = services.get_orders(db, only_uncompleted)
@@ -283,7 +283,7 @@ def get_orders_count_endpoint(db: Session = Depends(get_db)):
 @router.patch('/orders/{order_id}/complete', response_model=schemas.MessageResponseSchema)
 def complete_order_endpoint(
         order_id: int,
-        current_user: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        current_user: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db),
 ):
     try:
@@ -312,7 +312,7 @@ def complete_order_endpoint(
 @router.post("/images", status_code=status.HTTP_201_CREATED, response_model=schemas.ImageResponseSchema)
 def upload_image(
         image: UploadFile = File(...),
-        current_user: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.staff)),
+        current_user: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
 ):
     try:
         filename = process_image_upload(image, current_user.id)
@@ -337,7 +337,7 @@ def update_comment_status_endpoint(
         comment_id: int,
         data: schemas.CommentStatusUpdate,
         background_tasks: BackgroundTasks,
-        current_user: schemas.CurrentUserSchema = Depends(has_required_role(UserRole.moderator)),
+        current_user: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.moderator)),
         db: Session = Depends(get_db),
 ):
     new_status = data.status
