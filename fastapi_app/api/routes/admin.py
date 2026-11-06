@@ -1,19 +1,20 @@
+import logging
+
 from fastapi import APIRouter, Depends, status, HTTPException, Response, Query, UploadFile, File, Request, \
     BackgroundTasks
 from fastapi_cache import FastAPICache
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-import logging
+from sqlalchemy.orm import Session
 
+from domain import schemas
+from domain import services
 from domain.core.constants import CacheNamespace
 from domain.core.errors import NotFoundError, ConflictError, DomainError
-from fastapi_app.dependencies.db import get_db
-from fastapi_app.core.limiter import limiter
-from domain import services
-from fastapi_app.auth.jwt import create_access_token
-from fastapi_app.dependencies.auth import require_min_role, require_valid_user
 from fastapi_app.auth.cookies import set_auth_cookie, clear_auth_cookie
-from domain import schemas
+from fastapi_app.auth.jwt import create_access_token
+from fastapi_app.core.limiter import limiter
+from fastapi_app.dependencies.auth import require_min_role, require_valid_user
+from fastapi_app.dependencies.db import get_db
 from utils.enums import UserRole
 from utils.images import process_image_upload
 
@@ -205,7 +206,7 @@ def get_coupons_endpoint(
         _: schemas.CurrentUserSchema = Depends(require_min_role(UserRole.staff)),
         db: Session = Depends(get_db)
 ):
-    return services.get_coupons(db)
+    return services.get_available_coupons(db)
 
 
 @router.post('/coupons', status_code=status.HTTP_201_CREATED, response_model=schemas.MessageResponseSchema)

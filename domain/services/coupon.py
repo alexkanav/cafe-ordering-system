@@ -1,11 +1,12 @@
-from datetime import datetime
-from sqlalchemy.exc import IntegrityError
+from datetime import datetime, UTC
+
 from sqlalchemy import select, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from domain.core.errors import NotFoundError, ConflictError, DomainValidationError
-from infrastructure.db.models.users import Coupon
 from domain.schemas import CouponSchema, CouponCreateSchema
+from infrastructure.db.models.users import Coupon
 from utils.coupons import generate_coupon_code
 
 
@@ -29,8 +30,8 @@ def create_coupon(db: Session, data: CouponCreateSchema) -> int:
     return new_coupon.id
 
 
-def get_coupons(db: Session) -> list[CouponSchema]:
-    today = datetime.utcnow().date()
+def get_available_coupons(db: Session) -> list[CouponSchema]:
+    today = datetime.now(UTC).date()
     stmt = select(Coupon).where(
         Coupon.is_active.is_(True),
         or_(
@@ -70,7 +71,7 @@ def check_coupon(db: Session, coupon_code: str, user_id: int) -> int:
         raise DomainValidationError("Купон протермінований")
 
     coupon.user_id = user_id
-    coupon.used_at = datetime.utcnow()
+    coupon.used_at = datetime.now(UTC)
     coupon.is_active = False
 
     return coupon.discount_value

@@ -1,18 +1,19 @@
+import logging
 from datetime import datetime
+
 from flask import Blueprint, request, jsonify, g
 from flask_jwt_extended import create_access_token, set_access_cookies, unset_jwt_cookies
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from pydantic import ValidationError
-import logging
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from flask_app.extensions import cache, limiter
-from flask_app.security import role_required, require_active_user
-from utils.images import process_image_upload
+from domain import schemas
+from domain import services
 from domain.core.constants import CacheNamespace
 from domain.core.errors import NotFoundError, ConflictError, DomainError, DomainValidationError
-from domain import services
-from domain import schemas
+from flask_app.extensions import cache, limiter
+from flask_app.security import role_required, require_active_user
 from utils.enums import UserRole
+from utils.images import process_image_upload
 
 logger = logging.getLogger(__name__)
 
@@ -255,7 +256,7 @@ def mark_notification_read_endpoint(notification_id: int):
 @admin_bp.route('/coupons', methods=['GET'])
 @role_required(UserRole.staff, inject_user=False)
 def get_coupons_endpoint():
-    coupons = services.get_coupons(g.db)
+    coupons = services.get_available_coupons(g.db)
     return jsonify([c.model_dump() for c in coupons]), 200
 
 

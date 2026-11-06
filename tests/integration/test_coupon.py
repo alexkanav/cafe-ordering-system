@@ -1,10 +1,11 @@
-import pytest
 from datetime import datetime, date, timedelta
 
+import pytest
+
+from domain import services
 from domain.core.errors import ConflictError, DomainValidationError, NotFoundError
 from infrastructure.db.models.users import Coupon
 from tests.factories.coupon import make_coupon_schema
-from domain import services
 
 
 @pytest.fixture
@@ -81,7 +82,7 @@ def test_create_coupon__code_already_exists__raises_conflict_error(db_session, s
 
 
 def test_get_coupons__active_and_not_expired__returns_only_valid_coupons(db_session, sample_coupons):
-    response = services.get_coupons(db_session)
+    response = services.get_available_coupons(db_session)
 
     codes = {(c.code, c.discount_value) for c in response}
     assert codes == {("C1", 10), ("C2", 7)}
