@@ -107,14 +107,9 @@ def test_deactivate_coupon__coupon_already_inactive__raises_conflict_error(db_se
         services.deactivate_coupon(db_session, sample_coupons["c4"].id)
 
 
-def test_check_coupon__valid_coupon__returns_discount_and_marks_as_used(db_session, sample_coupons):
-    coupon = services.check_coupon(db_session, coupon_code="C1", user_id=1)
+def test_check_coupon__valid_coupon__returns_discount(db_session, sample_coupons):
+    coupon = services.check_coupon(db_session, coupon_code="C1")
     assert coupon == 10
-    db_session.flush()
-    db_coupon = db_session.get(Coupon, sample_coupons["c1"].id)
-    assert db_coupon.is_active is False
-    assert db_coupon.user_id == 1
-    assert isinstance(db_coupon.used_at, datetime)
 
 
 @pytest.mark.parametrize("code, error", [
@@ -124,4 +119,25 @@ def test_check_coupon__valid_coupon__returns_discount_and_marks_as_used(db_sessi
 ])
 def test_check_coupon__invalid_cases__raises_errors(db_session, sample_coupons, code, error):
     with pytest.raises(error):
-        services.check_coupon(db_session, coupon_code=code, user_id=1)
+        services.check_coupon(db_session, coupon_code=code)
+
+
+def test_process_coupon__valid_coupon__returns_discount_and_marks_as_used(db_session, sample_coupons):
+    coupon = services.coupon.process_coupon(db_session, coupon_code="C1", user_id=1)
+    assert coupon == 10
+    db_session.flush()
+    db_coupon = db_session.get(Coupon, sample_coupons["c1"].id)
+    assert db_coupon.is_active is False
+    assert db_coupon.user_id == 1
+    assert isinstance(db_coupon.used_at, datetime)
+
+
+@pytest.mark.parametrize("code", [
+    "C9",
+    "C3",
+    "C4",
+])
+def test_process_coupon__invalid_cases__raises_zero(db_session, sample_coupons, code):
+    coupon = services.coupon.process_coupon(db_session, coupon_code=code, user_id=1)
+    assert coupon == 0
+

@@ -1,21 +1,22 @@
 import logging
+
 from fastapi import APIRouter, Depends, status, Request, HTTPException, Response
 from fastapi_cache.decorator import cache
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import Session
 
-from domain.core.errors import NotFoundError, ConflictError, DomainValidationError
-from domain.core.constants import RedisPrefix, CacheNamespace, CacheKey
-from fastapi_app.core.limiter import limiter
-from fastapi_app.dependencies.db import get_db
-from domain import services
-from fastapi_app.dependencies.auth import get_current_user, require_valid_user
-from fastapi_app.auth.jwt import create_access_token
-from fastapi_app.auth.cookies import set_auth_cookie
 from domain import schemas
-from utils.helpers import static_key
+from domain import services
+from domain.core.constants import RedisPrefix, CacheNamespace, CacheKey
+from domain.core.errors import NotFoundError, ConflictError, DomainValidationError
+from fastapi_app.auth.cookies import set_auth_cookie
+from fastapi_app.auth.jwt import create_access_token
+from fastapi_app.core.limiter import limiter
+from fastapi_app.dependencies.auth import get_current_user, require_valid_user
+from fastapi_app.dependencies.db import get_db
 from utils.discounts import calculate_discount
 from utils.enums import UserRole
+from utils.helpers import static_key
 
 logger = logging.getLogger(__name__)
 
@@ -174,22 +175,18 @@ def check_coupon_endpoint(
         current_user: schemas.CurrentUserSchema = Depends(get_current_user)
 ):
     try:
-        discount = services.check_coupon(db, coupon_code, current_user.id)
-        db.commit()
+        discount = services.check_coupon(db, coupon_code)
     except NotFoundError as e:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
     except ConflictError as e:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e),
         )
     except DomainValidationError as e:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),

@@ -29,6 +29,7 @@ class OrderCreateSchema(BaseModel):
     coupon_pct: int = 0
     final_cost: float
     order_details: dict[str, OrderItemSchema]
+    coupon_code: str = ""
 
     model_config = ConfigDict(from_attributes=True)
 

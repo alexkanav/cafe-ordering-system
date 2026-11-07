@@ -43,7 +43,7 @@ export default function OrderSummary({ goTo, totalCost, tableNumber }) {
     fetchUserIdAndLoyaltyPercentage();
   }, []);
 
-  const postOrder = async (loyaltyPercentage, couponPercentage, payable) => {
+  const postOrder = async (loyaltyPercentage, couponPercentage, payable, couponCode) => {
     if (!userId) {
       toast.error("Не вдалося отримати ID користувача.");
       return;
@@ -65,7 +65,8 @@ export default function OrderSummary({ goTo, totalCost, tableNumber }) {
           "loyalty_pct": loyaltyPercentage,
           "coupon_pct": couponPercentage,
           "final_cost": payable,
-          "table": tableNumber
+          "table": tableNumber,
+          "coupon_code": couponCode
         },
         'POST'
       );

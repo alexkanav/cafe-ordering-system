@@ -1,16 +1,17 @@
-from flask_jwt_extended import create_access_token, set_access_cookies
-from flask import Blueprint, request, jsonify, g
-from sqlalchemy.exc import IntegrityError
-from pydantic import ValidationError
 import logging
 
-from flask_app.extensions import cache, limiter
-from domain import services
-from utils.discounts import calculate_discount
+from flask import Blueprint, request, jsonify, g
+from flask_jwt_extended import create_access_token, set_access_cookies
+from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
+
 from domain import schemas
-from domain.core.errors import NotFoundError, ConflictError, DomainValidationError
+from domain import services
 from domain.core.constants import CacheNamespace
+from domain.core.errors import NotFoundError, ConflictError, DomainValidationError
+from flask_app.extensions import cache, limiter
 from flask_app.security import require_active_user, role_required
+from utils.discounts import calculate_discount
 from utils.enums import UserRole
 
 logger = logging.getLogger(__name__)
@@ -124,15 +125,12 @@ def check_coupon_endpoint(coupon_code: str):
     try:
         discount = services.check_coupon(g.db, coupon_code, g.current_user["id"])
     except NotFoundError as e:
-        g.db.rollback_needed = True
         return jsonify(detail=str(e)), 404
 
     except ConflictError as e:
-        g.db.rollback_needed = True
         return jsonify(detail=str(e)), 409
 
     except DomainValidationError as e:
-        g.db.rollback_needed = True
         return jsonify(detail=str(e)), 400
 
     return jsonify(discount=discount), 200

@@ -1,10 +1,12 @@
-from datetime import datetime
+from datetime import datetime, UTC
+
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from domain.core.errors import NotFoundError, ConflictError
-from infrastructure.db.models.users import Order
 from domain.schemas import OrderSchema, OrderCreateSchema, OrderOperationResultSchema
+from domain.services.coupon import process_coupon
+from infrastructure.db.models.users import Order
 from utils.orders import calculate_order_lead_time
 
 
@@ -26,28 +28,29 @@ def complete_order(db: Session, order_id: int, employee_id: int) -> None:
         raise ConflictError("Замовлення вже виконано")
 
     order.completed_by = employee_id
-    order.completed_at = datetime.utcnow()
+    order.completed_at = datetime.now(UTC)
+
 
 def get_orders_count(db: Session) -> int:
     return db.scalar(select(func.count()).select_from(Order)) or 0
 
 
 def create_order(
-    db: Session,
-    order_data: OrderCreateSchema,
-    user_id: int
+        db: Session,
+        order_data: OrderCreateSchema,
+        user_id: int
 ) -> OrderOperationResultSchema:
     order_details_dict = {
         k: v.model_dump()
         for k, v in order_data.order_details.items()
     }
-
+    coupon_pct = process_coupon(db, order_data.coupon_code, user_id)
     new_order = Order(
         user_id=user_id,
         table=order_data.table,
         original_cost=order_data.original_cost,
         loyalty_pct=order_data.loyalty_pct,
-        coupon_pct=order_data.coupon_pct,
+        coupon_pct=coupon_pct,
         final_cost=order_data.final_cost,
         order_details=order_details_dict,
     )
@@ -61,4 +64,3 @@ def create_order(
         id=new_order.id,
         leadTime=lead_time
     )
-

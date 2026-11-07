@@ -53,26 +53,51 @@ def deactivate_coupon(db: Session, coupon_id: int) -> None:
     coupon.is_active = False
 
 
-def check_coupon(db: Session, coupon_code: str, user_id: int) -> int:
+def check_coupon(db: Session, coupon_code: str) -> int:
     stmt = (
         select(Coupon)
         .where(Coupon.code == coupon_code)
-        .with_for_update()
     )
     coupon = db.scalar(stmt)
 
-    if not coupon:
+    if coupon is None:
         raise NotFoundError("Купон не знайдено")
 
     if not coupon.is_active:
         raise ConflictError("Купон вже використано")
 
-    if coupon.expires_at and datetime.utcnow().date() > coupon.expires_at:
+    if coupon.expires_at and datetime.now(UTC).date() > coupon.expires_at:
         raise DomainValidationError("Купон протермінований")
+
+    return coupon.discount_value
+
+
+def process_coupon(db: Session, coupon_code: str, user_id: int) -> int:
+    stmt = (
+        select(Coupon)
+        .where(Coupon.code == coupon_code)
+        .with_for_update()
+    )
+
+    coupon = db.scalar(stmt)
+
+    if coupon is None:
+        return 0
+
+    today = datetime.now(UTC).date()
+
+    if not coupon.is_active:
+        return 0
+
+    if coupon.expires_at and today > coupon.expires_at:
+        return 0
+
+    discount_value = coupon.discount_value
 
     coupon.user_id = user_id
     coupon.used_at = datetime.now(UTC)
     coupon.is_active = False
 
-    return coupon.discount_value
+    db.flush()
 
+    return discount_value

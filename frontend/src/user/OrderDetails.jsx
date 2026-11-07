@@ -153,7 +153,7 @@ export default function OrderDetails({ totalCost, loyaltyPercentage,  goTo, post
             <div className="checkout--footer">
               <button onClick={() => goTo(VIEWS.PRODUCT)}className="cancel-btn">Скасувати</button>
               <button
-                onClick={() => postOrder(loyaltyPercentage, couponPercentage, payable)}
+                onClick={() => postOrder(loyaltyPercentage, couponPercentage, payable, couponCode)}
                 disabled={loading || isCashPayment === null}
                 className="apply-btn"
               >
