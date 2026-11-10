@@ -20,8 +20,9 @@ def make_order_schema(**overrides):
         "original_cost": 200,
         "loyalty_pct": 10,
         "coupon_pct": 5,
-        "final_cost": 170,
-        "order_details": {"125": make_order_details_schema()}
+        "final_cost": 171,
+        "order_details": {"125": make_order_details_schema()},
+        "coupon_code": "ABC"
     }
 
     params = {**defaults, **overrides}

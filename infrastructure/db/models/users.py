@@ -1,4 +1,6 @@
 from datetime import datetime, date
+from decimal import Decimal
+
 from sqlalchemy import Table, Column, ForeignKey, DateTime, Date, String, Integer, JSON, Numeric, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -86,7 +88,7 @@ class DishExtra(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(20), unique=True)
-    price: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
+    price: Mapped[int] = mapped_column(default=0)
 
     dishes: Mapped[list["Dish"]] = relationship(
         "Dish",
@@ -110,10 +112,10 @@ class Order(Base):
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     table: Mapped[int | None] = mapped_column(nullable=True)
-    original_cost: Mapped[float] = mapped_column(Numeric(10, 2))
+    original_cost: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     loyalty_pct: Mapped[int] = mapped_column(default=0)
     coupon_pct: Mapped[int] = mapped_column(default=0)
-    final_cost: Mapped[float] = mapped_column(Numeric(10, 2))
+    final_cost: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     order_details: Mapped[dict] = mapped_column(JSON)
 
     user: Mapped["User"] = relationship(back_populates="orders")

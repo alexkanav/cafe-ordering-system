@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -14,20 +16,20 @@ class OrderSchema(BaseModel):
     id: int
     table: int | None
     order_details: dict[str, OrderItemSchema]
-    original_cost: float
+    original_cost: Decimal
     loyalty_pct: int = 0
     coupon_pct: int = 0
-    final_cost: float
+    final_cost: Decimal
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class OrderCreateSchema(BaseModel):
     table: int
-    original_cost: float
+    original_cost: Decimal
     loyalty_pct: int = 0
     coupon_pct: int = 0
-    final_cost: float
+    final_cost: Decimal
     order_details: dict[str, OrderItemSchema]
     coupon_code: str = ""
 

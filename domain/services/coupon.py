@@ -84,18 +84,20 @@ def process_coupon(db: Session, coupon_code: str, user_id: int) -> int:
     if coupon is None:
         return 0
 
-    today = datetime.now(UTC).date()
+    now = datetime.now(UTC)
 
     if not coupon.is_active:
         return 0
 
-    if coupon.expires_at and today > coupon.expires_at:
+    if coupon.expires_at and now.date() > coupon.expires_at:
         return 0
 
     discount_value = coupon.discount_value
+    if not 0 <= discount_value <= 100:
+        return 0
 
     coupon.user_id = user_id
-    coupon.used_at = datetime.now(UTC)
+    coupon.used_at = now
     coupon.is_active = False
 
     db.flush()

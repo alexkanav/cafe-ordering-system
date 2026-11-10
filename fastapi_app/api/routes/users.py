@@ -130,6 +130,18 @@ def place_order_endpoint(
     try:
         order = services.create_order(db, order_data, current_user.id)
         db.commit()
+    except NotFoundError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except DomainValidationError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
     except SQLAlchemyError:
         db.rollback()
         logger.exception("Failed_to_create_order")
@@ -172,7 +184,6 @@ def like_dish_endpoint(
 def check_coupon_endpoint(
         coupon_code: str,
         db: Session = Depends(get_db),
-        current_user: schemas.CurrentUserSchema = Depends(get_current_user)
 ):
     try:
         discount = services.check_coupon(db, coupon_code)

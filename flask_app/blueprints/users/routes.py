@@ -91,11 +91,19 @@ def place_order_endpoint():
 
     try:
         order_data = schemas.OrderCreateSchema.model_validate(json_data)
+        order = services.create_order(g.db, order_data, g.current_user["id"])
 
     except ValidationError as e:
         return jsonify(detail=str(e)), 422
 
-    order = services.create_order(g.db, order_data, g.current_user["id"])
+    except NotFoundError as e:
+        g.db.rollback_needed = True
+        return jsonify(detail=str(e)), 404
+
+    except DomainValidationError as e:
+        g.db.rollback_needed = True
+        return jsonify(detail=str(e)), 400
+
     return jsonify(order.model_dump()), 201
 
 
