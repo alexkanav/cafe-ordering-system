@@ -1,15 +1,27 @@
+import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { sendToServer } from '../utils/api';
 
 
+const formatCurrency = (price) => Number(price).toFixed(2);
+
 export default function OrderCard({ selectedOrder, setSelectedOrder }) {
+  const [isLoading, setIsLoading] = useState(false);
+
   const finalizeOrder = async () => {
+    if (isLoading || !selectedOrder) return;
+
+    const orderId = selectedOrder.id;
+
+    setIsLoading(true);
     try {
-      const { data } = await sendToServer(`/api/admin/orders/${selectedOrder.id}/complete`, null, 'PATCH');
-      toast.success(data.message || `Замовлення: ${selectedOrder.id} виконано`);
+      const { data } = await sendToServer(`/api/admin/orders/${orderId}/complete`, null, 'PATCH');
+      toast.success(data.message || `Замовлення: ${orderId} виконано`);
       setSelectedOrder(null);
     } catch (error) {
-      toast.error(error.message || "Замовлення скасовано");
+      toast.error(error.message || "Не вдалося завершити замовлення");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -24,8 +36,8 @@ export default function OrderCard({ selectedOrder, setSelectedOrder }) {
               <span className="table-num">Стіл  {selectedOrder.table}</span>
             </div>
             <div className="summary-card-description">
-              {Object.keys(selectedOrder.order_details).map((code) => {
-              const { name, quantity, price, additions } = selectedOrder.order_details[code];
+              {Object.entries(selectedOrder.order_details).map(([code, item]) => {
+                const { name, quantity, price, additions } = item;
                 return (
                   <div className="order-card-item" key={code}>
                     <div className="details">
@@ -36,32 +48,46 @@ export default function OrderCard({ selectedOrder, setSelectedOrder }) {
                     {additions && Object.keys(additions).length > 0 && (
                       <div className="order-additions">
                         <span>- додатки: (
-                          {Object.keys(additions).map((addName) => (
-                            <span key={addName}>{addName}:{additions[addName]} грн., </span>
+                          {Object.entries(additions).map(([addName, addition], index) => (
+                            <span key={addName}>
+                              {index > 0 && ', '}
+                              {addName}: {addition.quantity}x{addition.price} грн.
+                            </span>
                           ))}
                         )</span>
                       </div>
                     )}
                   </div>
-                  )
-                })}
-              </div>
-
+                )
+              })}
+            </div>
             <div className="board-title">Розрахована вартість</div>
               <div className="details">
                 <span>Вартість без знижки:</span>
-                <span className="no-wrap-text"> {selectedOrder.original_cost} грн.</span>
+                <span className="no-wrap-text"> {formatCurrency(selectedOrder.original_cost)} грн.</span>
                 <span>Знижка за купоном:</span>
                 <span className="no-wrap-text"> {selectedOrder.coupon_pct} %</span>
                 <span>Знижка постійного покупця:</span>
                 <span className="no-wrap-text"> {selectedOrder.loyalty_pct} %</span>
                 <span>До сплати:</span>
-                <span className="no-wrap-text"> {selectedOrder.final_cost} грн.</span>
+                <span className="no-wrap-text"> {formatCurrency(selectedOrder.final_cost)} грн.</span>
               </div>
-              <div className="price">{selectedOrder.final_cost}<sub> грн.</sub></div>
+              <div className="price">{formatCurrency(selectedOrder.final_cost)}<sub> грн.</sub></div>
               <div className="checkout--footer">
-                <button  onClick={() => setSelectedOrder(null)} className="cancel-btn">Скасувати</button>
-                <button onClick={finalizeOrder} className="apply-btn">Підтверджую</button>
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="cancel-btn"
+                  disabled={isLoading}
+                >
+                  Скасувати
+                </button>
+                <button
+                  onClick={finalizeOrder}
+                  className="apply-btn"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Обробка...' : 'Підтверджую'}
+                </button>
               </div>
           </div>
         </div>

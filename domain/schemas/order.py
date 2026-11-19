@@ -3,11 +3,16 @@ from decimal import Decimal
 from pydantic import BaseModel, Field, ConfigDict
 
 
+class OrderAdditionSchema(BaseModel):
+    price: int
+    quantity: int
+
+
 class OrderItemSchema(BaseModel):
     name: str
     quantity: int
     price: int
-    additions: dict[str, int] = Field(default_factory=dict)
+    additions: dict[str, OrderAdditionSchema] = Field(default_factory=dict)
 
     model_config = ConfigDict(from_attributes=True)
 

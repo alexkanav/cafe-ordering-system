@@ -15,16 +15,16 @@ export default function DishSelectionPage() {
   const [menuCategories, setMenuCategories] = useState([]);
   const [categoryItems, setCategoryItems] = useState([]);
   const [allMenuItems, setAllMenuItems] = useState({});
-  const [currentComponent, setCurrentComponent] = useState(VIEWS.PRODUCT);
-  const { addItem, cleanedOrder, calculateTotal } = useOrder();
+  const [currentView, setCurrentView] = useState(VIEWS.PRODUCT);
+  const { addItem, cleanOrder, calculateTotal } = useOrder();
 
   const [tableNumber, setTableNumber] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
 
-  const goTo = (view) => setCurrentComponent(view);
+  const goTo = (view) => setCurrentView(view);
 
   const completeOrder = () => {
-    const validOrder = cleanedOrder();
+    const validOrder = cleanOrder();
     if (Object.keys(validOrder).length === 0) {
       toast.error("Ваше замовлення порожнє.");
       return;
@@ -58,7 +58,7 @@ export default function DishSelectionPage() {
   if (!menuCategories.length || !categoryItems.length || !Object.keys(allMenuItems).length)
     return <Spinner />
 
-  const COMPONENTS = {
+  const VIEW_COMPONENTS = {
     [VIEWS.PRODUCT]: (
       <>
         <ProductViewer
@@ -77,7 +77,7 @@ export default function DishSelectionPage() {
     [VIEWS.SUMMARY]: <OrderSummary goTo={goTo} totalCost={totalCost} tableNumber={tableNumber} />,
   };
 
-  const navLinks = (currentComponent === VIEWS.PRODUCT)
+  const navLinks = (currentView === VIEWS.PRODUCT)
     ? [
         { to: `#category_${menuCategories.length - 2}`, src: heart, alt: 'Популярні страви', name: 'Популярне' },
         { to: `#category_${menuCategories.length - 1}`, src: star, alt: 'Рекомендовані страви', name: 'Рекомендуємо' },
@@ -88,7 +88,7 @@ export default function DishSelectionPage() {
     <>
       <Header navLinks={navLinks} />
       <div className="content">
-        {COMPONENTS[currentComponent]}
+        {VIEW_COMPONENTS[currentView]}
       </div>
       <Footer />
     </>

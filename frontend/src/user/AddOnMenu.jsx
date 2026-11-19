@@ -1,17 +1,16 @@
-import { toast } from 'react-toastify';
 import { useOrder } from '../context/OrderContext';
 import { useDragScroll } from '../hooks/useDragScroll';
+import QuantityDropdown from './QuantityDropdown';
 
 
-export default function AddOnMenu(props) {
-  const {
-    dishId,
-    currentDish,
-    addOnMenu,
-    dishName,
-  } = props;
-
-  const { orderDetails, updateAddition } = useOrder();
+export default function AddOnMenu({
+  dishId,
+  currentDish,
+  addOnMenu,
+  dishName,
+  dishRequestedQuantity,
+}) {
+  const { updateAddition } = useOrder();
 
   const {
     containerRef,
@@ -19,14 +18,6 @@ export default function AddOnMenu(props) {
     handleMouseMove,
     handleMouseUp,
   } = useDragScroll();
-
-  const selectAddition = (dishId, addition, price) => {
-    if (dishId in orderDetails) {
-      updateAddition(dishId, addition, price);
-    } else {
-      toast.error(`Спершу додайте страву: ${dishName}`);
-    }
-  };
 
   return (
     <div className="ext-note">
@@ -39,33 +30,18 @@ export default function AddOnMenu(props) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {Object.keys(addOnMenu).map((addon) => {
-          const isSelected = !!currentDish?.additions?.[addon];
-          const isAddOnApplied = Number(currentDish?.quantity) > 0
-
-          const className = [
-            'nav-scr-add',
-            isAddOnApplied ? 'add-dg-col' : '',
-            isSelected ? 'active-button' : '',
-          ]
-            .filter(Boolean)
-            .join(' ');
-
-          return (
-            <button
-              key={addon}
-              className={className}
-              onClick={
-                isSelected
-                  ? undefined
-                  : () => selectAddition(dishId, addon, addOnMenu[addon])
-              }
-            >
-              <div className="card-name-add">{addon}</div>
-              <div className="card-price-add">{addOnMenu[addon]} грн.</div>
-            </button>
-          );
-        })}
+        {Object.keys(addOnMenu).map((addon) => (
+          <QuantityDropdown
+            key={addon}
+            dishId={dishId}
+            addon={addon}
+            addOnMenu={addOnMenu}
+            currentDish={currentDish}
+            dishName={dishName}
+            dishRequestedQuantity={dishRequestedQuantity}
+            updateAddition={updateAddition}
+          />
+        ))}
       </div>
     </div>
   );

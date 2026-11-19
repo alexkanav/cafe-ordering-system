@@ -1,21 +1,20 @@
 import { createContext, useContext, useState } from 'react';
 
 
-const OrderContext = createContext();
+const OrderContext = createContext(null);
 
-export const useOrder = () => useContext(OrderContext);
+export const useOrder = () => {
+  const context = useContext(OrderContext);
+
+  if (!context) {
+    throw new Error('useOrder must be used within OrderProvider');
+  }
+
+  return context;
+};
 
 export const OrderProvider = ({ children }) => {
   const [orderDetails, setOrderDetails] = useState({});
-
-
-   // Add item in the order
-  const addItem = (item, itemData) => {
-    setOrderDetails(prev => ({
-      ...prev,
-      [item]: itemData
-    }));
-  };
 
   // Update item in the order
   const updateItem = (dishId, itemData) => {
@@ -29,19 +28,24 @@ export const OrderProvider = ({ children }) => {
     };
 
   // Update addition
-  const updateAddition = (dishId, addition, price) => {
+  const updateAddition = (dishId, addition, price, quantity) => {
     setOrderDetails(prev => {
       const existingDish = prev[dishId] || {};
       const existingAdditions = existingDish.additions || {};
+
+      const updatedAdditions = { ...existingAdditions };
+
+      if (quantity > 0) {
+        updatedAdditions[addition] = { price, quantity };
+      } else {
+        delete updatedAdditions[addition];
+      }
 
       return {
         ...prev,
         [dishId]: {
           ...existingDish,
-          additions: {
-            ...existingAdditions,
-            [addition]: price
-          }
+          additions: updatedAdditions
         }
       };
     });
@@ -52,21 +56,24 @@ export const OrderProvider = ({ children }) => {
     return Object.values(orderDetails).reduce((sum, item) => {
       const quantity = Number(item.quantity || 0);
       const price = Number(item.price || 0);
-      const additions = item.additions || {};
-      const additionsTotal = Object.values(additions).reduce((a, b) => a + Number(b), 0);
+      const additionsTotal = Object.values(item.additions ?? {}).reduce(
+        (total, addition) =>
+          total + Number(addition.price) * Number(addition.quantity),
+        0
+      );
       return sum + (quantity * price + additionsTotal);
     }, 0);
   };
 
   // Filter out items with quantity <= 0
-  const cleanedOrder = () => {
+  const cleanOrder = () => {
     const validOrder = Object.fromEntries(
       Object.entries(orderDetails).filter(
         ([, value]) => Number(value.quantity) > 0
       )
     );
     if (Object.keys(orderDetails).length !== Object.keys(validOrder).length) {
-      setOrderDetails(validOrder)
+      setOrderDetails(validOrder);
     }
     return validOrder;
   };
@@ -77,11 +84,10 @@ export const OrderProvider = ({ children }) => {
     <OrderContext.Provider
       value={{
         orderDetails,
-        addItem,
         updateItem,
         updateAddition,
         calculateTotal,
-        cleanedOrder,
+        cleanOrder,
         clearOrder
       }}
     >

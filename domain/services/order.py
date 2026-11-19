@@ -48,15 +48,14 @@ def calculate_original_cost(db: Session, order_details: dict[str, OrderItemSchem
     if len(requested_dishes) != len(dishes):
         raise NotFoundError("Замовлені страви зараз недоступні")
 
-    addition_names = [
-        name
-        for item in order_details.values()
-        for name in item.additions
-    ]
+    requested_additions = {}
+    for items in order_details.values():
+        for name, addition in items.additions.items():
+            requested_additions[name] = requested_additions.get(name, 0) + addition.quantity
 
     additions = db.scalars(
         select(DishExtra)
-        .where(DishExtra.name.in_(addition_names))
+        .where(DishExtra.name.in_(requested_additions))
     ).all()
 
     addition_prices_by_name = {
@@ -64,7 +63,7 @@ def calculate_original_cost(db: Session, order_details: dict[str, OrderItemSchem
         for addition in additions
     }
 
-    if len(set(addition_names)) != len(addition_prices_by_name):
+    if len(requested_additions) != len(addition_prices_by_name):
         raise NotFoundError("Замовлені доповнення зараз недоступні")
 
     dish_prices_by_code = {
@@ -78,8 +77,8 @@ def calculate_original_cost(db: Session, order_details: dict[str, OrderItemSchem
     )
 
     additions_cost = sum(
-        addition_prices_by_name[name]
-        for name in addition_names
+        addition_prices_by_name[name] * requested_additions[name]
+        for name in requested_additions
     )
 
     return dishes_cost + additions_cost
@@ -87,12 +86,18 @@ def calculate_original_cost(db: Session, order_details: dict[str, OrderItemSchem
 
 def calculate_loyalty_pct(db: Session, user_id: int) -> int:
     user_total_amount = get_total_amount(db, user_id)
-    loyalty_pct = calculate_discount(user_total_amount)
 
-    if not 0 <= loyalty_pct <= 100:
-        return 0
+    return calculate_discount(user_total_amount)
 
-    return loyalty_pct
+
+def calculate_final_cost(
+        original_cost: Decimal,
+        loyalty_pct: int,
+        coupon_pct: int,
+) -> Decimal:
+    discount = Decimal(loyalty_pct + coupon_pct) / Decimal("100")
+
+    return (original_cost * (1 - discount)).quantize(Decimal("0.01"))
 
 
 def create_order(
@@ -104,7 +109,6 @@ def create_order(
         k: v.model_dump()
         for k, v in order_data.order_details.items()
     }
-
     original_cost = calculate_original_cost(db, order_data.order_details)
     if original_cost != order_data.original_cost:
         raise DomainValidationError("Невірна вартість замовлення")
@@ -113,13 +117,11 @@ def create_order(
 
     if order_data.coupon_code:
         coupon_pct = process_coupon(db, order_data.coupon_code, user_id)
+        if coupon_pct != order_data.coupon_pct:
+            raise DomainValidationError("Ваш купон недійсний")
 
     loyalty_pct = calculate_loyalty_pct(db, user_id)
-    final_cost = (
-            original_cost
-            * (Decimal("1") - Decimal(loyalty_pct) / Decimal("100"))
-            * (Decimal("1") - Decimal(coupon_pct) / Decimal("100"))
-    ).quantize(Decimal("0.01"))
+    final_cost = calculate_final_cost(original_cost, loyalty_pct, coupon_pct)
 
     new_order = Order(
         user_id=user_id,
