@@ -131,7 +131,7 @@ def like_dish_endpoint(dish_code: str):
 @role_required()
 def check_coupon_endpoint(coupon_code: str):
     try:
-        discount = services.check_coupon(g.db, coupon_code, g.current_user["id"])
+        discount = services.check_coupon(g.db, coupon_code)
     except NotFoundError as e:
         return jsonify(detail=str(e)), 404
 
