@@ -1,5 +1,5 @@
-import facebook from '../assets/images/facebook.svg';
-import insta from '../assets/images/insta.svg';
+import facebook from '../../assets/images/facebook.svg';
+import insta from '../../assets/images/insta.svg';
 
 
 export default function Footer() {

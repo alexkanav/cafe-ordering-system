@@ -3,14 +3,14 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { OrderProvider } from './context/OrderContext';
 import { AuthProvider } from './context/AuthContext';
-import Home from './user/Home';
+import Home from './user/home/Home';
 import DishSelectionPage from './user/DishSelectionPage';
-import FeedbackPage from './user/FeedbackPage';
+import FeedbackPage from './user/feedback/FeedbackPage';
 import AdminPanel from './admin/AdminPanel';
-import OrderPanel from './admin/OrderPanel';
-import Login from './admin/Login';
-import Register from './admin/Register';
-import Auth from './admin/Auth';
+import OrderPanel from './admin/order/OrderPanel';
+import Login from './admin/auth/Login';
+import Register from './admin/auth/Register';
+import Auth from './admin/auth/Auth';
 import StaffRoute from './routes/StaffRoute';
 
 

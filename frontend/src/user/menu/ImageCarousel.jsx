@@ -1,6 +1,6 @@
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { Carousel } from 'react-responsive-carousel';
-import { config } from '../config';
+import { config } from '../../config';
 
 
 export default function ImageCarousel({ carouselImages }) {

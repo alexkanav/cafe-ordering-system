@@ -1,7 +1,7 @@
-import { Header, Footer } from '../components';
+import { Header, Footer } from '../../components';
 import CommentForm from './CommentForm';
-import hot from '../assets/images/hot.svg';
-import home from '../assets/images/home.svg';
+import hot from '../../assets/images/hot.svg';
+import home from '../../assets/images/home.svg';
 
 
 export default function FeedbackPage() {

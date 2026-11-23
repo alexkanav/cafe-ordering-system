@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Description from './Description';
-import ImageCarousel from './ImageCarousel';
-import Comments from './Comments';
+import ImageCarousel from '../menu/ImageCarousel';
+import Comments from '../feedback/Comments';
 import Contacts from './Contacts';
-import { Footer } from '../components';
-import logo from '../assets/images/cafegray.png';
-import hot from '../assets/images/hot2.svg';
-import text from '../assets/images/text.svg';
-import { config } from '../config';
+import { Footer } from '../../components';
+import logo from '../../assets/images/cafegray.png';
+import hot from '../../assets/images/hot2.svg';
+import text from '../../assets/images/text.svg';
+import { config } from '../../config';
 
 
 export default function Home() {

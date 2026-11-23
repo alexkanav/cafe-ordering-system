@@ -1,5 +1,5 @@
 import ProductCard from './ProductCard';
-import DragScrollMenu from './DragScroll/DragScrollMenu';
+import DragScrollMenu from '../DragScroll/DragScrollMenu';
 
 
 export default function ProductViewer({ menuCategories, categoryItems, allMenuItems }) {

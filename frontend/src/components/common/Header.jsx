@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import logo from '../assets/images/logo.png';
-import home from '../assets/images/home.svg';
+import logo from '../../assets/images/logo.png';
+import home from '../../assets/images/home.svg';
 
 
 const NavMenu = ({ to, src, alt, name }) => {

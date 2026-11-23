@@ -1,6 +1,6 @@
-import telegram from '../assets/images/teleg.png';
-import whatsapp from '../assets/images/whatsapp.png';
-import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import telegram from '../../assets/images/teleg.png';
+import whatsapp from '../../assets/images/whatsapp.png';
+import { useScrollAnimation } from '../../hooks/useScrollAnimation';
 
 
 export default function Contacts({ contacts, weekdays, openingHours}) {

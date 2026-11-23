@@ -6,11 +6,11 @@ import uk from "date-fns/locale/uk";
 
 registerLocale("uk", uk);
 
-export default function CouponForm({ onSubmit, coupons = [], createCoupon }) {
+
+export default function CouponCreateForm({ onSubmit, coupons = [], createCoupon }) {
   const [discount, setDiscount] = useState("");
   const [expiresAt, setExpiresAt] = useState(new Date());
   const [isExpires, setIsExpires] = useState(false);
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -32,7 +32,6 @@ export default function CouponForm({ onSubmit, coupons = [], createCoupon }) {
     setIsExpires(false);
     setExpiresAt(new Date());
   };
-
 
   return (
     <div className="dashboard-form">

@@ -1,5 +1,5 @@
-import { useOrder } from '../context/OrderContext';
-import { useDragScroll } from '../hooks/useDragScroll';
+import { useOrder } from '../../context/OrderContext';
+import { useDragScroll } from '../../hooks/useDragScroll';
 import QuantityDropdown from './QuantityDropdown';
 
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { sendToServer } from '../utils/api';
-import CouponForm from './CouponForm';
-import { Spinner } from '../components';
+import { sendToServer } from '../../utils/api';
+import CouponCreateForm from './CouponCreateForm';
+import { Spinner } from '../../components';
 
 
 export default function CouponManager() {
@@ -25,7 +25,6 @@ export default function CouponManager() {
     fetchCoupons();
   }, [reloadTrigger]);
 
-
   const createCoupon = async (coupon_data) => {
     try {
       setLoading(true);
@@ -38,7 +37,6 @@ export default function CouponManager() {
       setLoading(false);
     }
   };
-
 
   const deactivateCoupon = async (id) => {
     try {
@@ -97,7 +95,7 @@ export default function CouponManager() {
           </table>
         )}
       </div>
-      <CouponForm createCoupon={createCoupon} />
+      <CouponCreateForm createCoupon={createCoupon} />
     </div>
   );
 }

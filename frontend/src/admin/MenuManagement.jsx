@@ -1,5 +1,5 @@
 import DishCategoryEditor from './DishCategoryEditor';
-import CouponManager from './CouponManager';
+import CouponManager from './coupon/CouponManager';
 
 export default function MenuManagement() {
 

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { Header, Footer } from '../components';
+import { Header, Footer } from '../../components';
 import OrderBoard from './OrderBoard';
 import OrderCard from './OrderCard';
-import control from '../assets/images/control.svg';
-import { useAuth } from '../context/AuthContext';
+import control from '../../assets/images/control.svg';
+import { useAuth } from '../../context/AuthContext';
 
 
 export default function OrderPanel() {

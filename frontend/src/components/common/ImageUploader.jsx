@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { config } from '../config';
+import { config } from '../../config';
 
 
 export default function ImageUploader({ setNewImage }) {

@@ -1,10 +1,9 @@
+import { toast } from 'react-toastify';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { Form } from '../components';
-import { login } from '../utils/authUtils';
-import { toast } from 'react-toastify';
-import { Spinner } from '../components';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import { login } from '../../utils/authUtils';
+import { Form, Spinner } from '../../components';
 
 
 export default function Login() {

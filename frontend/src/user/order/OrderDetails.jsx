@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
-import { useOrder } from '../context/OrderContext';
-import { VIEWS } from '../constants/views';
-import { sendToServer } from '../utils/api';
-import mcVisa from '../../static/images/visa-mc.jpg';
-import gPay from '../../static/images/google-pay.png';
-import aPay from '../../static/images/apple-pay.png';
+import { useOrder } from '../../context/OrderContext';
+import { VIEWS } from '../../constants/views';
+import { sendToServer } from '../../utils/api';
+import mcVisa from '../../../static/images/visa-mc.jpg';
+import gPay from '../../../static/images/google-pay.png';
+import aPay from '../../../static/images/apple-pay.png';
+import OrderItemsList from '../../components/order/OrderItemsList';
+import OrderPriceSummary from '../../components/order/OrderPriceSummary';
+import CouponValidateForm from '../coupon/CouponValidateForm';
 
-
-const formatCurrency = (num) => num.toFixed(2);
 
 export default function OrderDetails({ totalCost, loyaltyPercentage,  goTo, postOrder, loading, tableNumber }) {
   const [couponPercentage, setCouponPercentage] = useState(0);
@@ -22,7 +23,7 @@ export default function OrderDetails({ totalCost, loyaltyPercentage,  goTo, post
   const orderTotal  = Number(totalCost ?? 0);
   const couponDiscount = orderTotal  * couponPercentage / 100;
   const loyaltyDiscount = orderTotal  * loyaltyPercentage / 100;
-  const amountToPay = formatCurrency(orderTotal  - couponDiscount - loyaltyDiscount);
+  const amountToPay = orderTotal  - couponDiscount - loyaltyDiscount;
 
   const paymentMethod = isCashPayment === null
     ? null
@@ -68,81 +69,35 @@ export default function OrderDetails({ totalCost, loyaltyPercentage,  goTo, post
             <div className="order-table-num">Ваш стіл  {tableNumber}</div>
 
             <div className="summary-card-description">
-              {Object.keys(orderDetails).map((id) => {
-                const { name, quantity, price, additions } = orderDetails[id];
-                return (
-                  <div className="order-card-item" key={id}>
-                    <div className="details">
-                      <span>{name}:</span>
-                      <span className="no-wrap-text"><strong>{quantity}</strong> x {price} грн.</span>
-                    </div>
-                    {additions && Object.keys(additions).length > 0 && (
-                      <div className="order-additions">
-                        <span>
-                          - додатки: (
-                          {Object.entries(additions)
-                            .filter(([addName, { quantity }]) => quantity > 0)
-                            .map(([addName, { price, quantity }], index) => (
-                              <span key={addName}>
-                                {index > 0 && ', '}
-                                {addName}: {quantity}x{price} грн.
-                              </span>
-                            ))}
-                          )
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              <OrderItemsList
+                orderDetails={orderDetails}
+                showPrices={true}
+              />
             </div>
 
-            <div className="order-card-price">Сума: {formatCurrency(orderTotal )} грн.</div>
+            <div className="order-card-price">Сума: {orderTotal.toFixed(2)} грн.</div>
 
             <div className="board-title">Маєте купон на знижку?</div>
-            <form className="coupon" onSubmit={handleApplyCoupon}>
-              <input
-                id="coupon"
-                type="text"
-                placeholder="Ваш купон ..."
-                className={`input-field ${hasCouponError ? 'error' : ''}`}
-                value={isCouponApplied ? `Задіяно: ${couponCode}` : couponCode}
-                minLength={10}
-                maxLength={10}
-                required
-                onChange={(e) => {
-                  if (!isCouponApplied) {
-                    const value = e.target.value;
-                    if (/^[a-zA-Z0-9]{0,10}$/.test(value)) {
-                      setCouponCode(value);
-                      setHasCouponError(false);
-                    } else {
-                      toast.warning("Купон має містити латинські літери або цифри.");
-                    }
-                  }
-                }}
-                disabled={isCouponApplied}
-              />
-              <button
-                className="board-btn"
-                type="submit"
-                disabled={isCouponApplied || isCouponLoading}
-              >
-                {isCouponLoading ? 'Перевірка...' : 'Додати'}
-              </button>
-            </form>
 
-            <div className="board-title">Розрахована вартість</div>
-            <div className="details">
-              <span>Вартість без знижки:</span>
-              <span className="no-wrap-text">{formatCurrency(orderTotal )} грн.</span>
-              <span>Знижка за купоном: {couponPercentage}%</span>
-              <span className="no-wrap-text">{formatCurrency(couponDiscount)} грн.</span>
-              <span>Знижка постійного покупця: {loyaltyPercentage}%</span>
-              <span className="no-wrap-text">{formatCurrency(loyaltyDiscount)} грн.</span>
-              <span>До сплати:</span>
-              <span className="no-wrap-text">{amountToPay} грн.</span>
-            </div>
+            <CouponValidateForm
+              couponCode={couponCode}
+              setCouponCode={setCouponCode}
+              handleApplyCoupon={handleApplyCoupon}
+              hasCouponError={hasCouponError}
+              setHasCouponError={setHasCouponError}
+              isCouponApplied={isCouponApplied}
+              isCouponLoading={isCouponLoading}
+            />
+
+            <OrderPriceSummary
+              orderTotal={orderTotal}
+              couponPercentage={couponPercentage}
+              couponDiscount={couponDiscount}
+              loyaltyPercentage={loyaltyPercentage}
+              loyaltyDiscount={loyaltyDiscount}
+              amountToPay={amountToPay}
+              showDiscountAmounts={true}
+            />
 
             <div className="board-title">Оберіть, як вам зручно оплатити</div>
             <div className="payment-method">
@@ -172,7 +127,7 @@ export default function OrderDetails({ totalCost, loyaltyPercentage,  goTo, post
                 </label>
               </div>
             </div>
-            <div className="price">{amountToPay}<sub> грн.</sub></div>
+            <div className="price">{amountToPay.toFixed(2)}<sub> грн.</sub></div>
             <div className="checkout--footer">
               <button onClick={() => goTo(VIEWS.PRODUCT)} className="cancel-btn">Скасувати</button>
               <button

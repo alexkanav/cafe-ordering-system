@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { sendToServer } from '../utils/api';
-import { Spinner} from '../components';
+import { sendToServer } from '../../utils/api';
+import { Spinner} from '../../components';
 
 
 export default function Comments() {

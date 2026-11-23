@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { sendToServer } from '../utils/api';
-import { config } from '../config';
+import { sendToServer } from '../../utils/api';
+import { config } from '../../config';
+import OrderItemsList from '../../components/order/OrderItemsList';
 
 
 export default function OrderBoard({ setSelectedOrder, name }) {
@@ -62,27 +63,10 @@ export default function OrderBoard({ setSelectedOrder, name }) {
               </div>
 
               <div className="order-card-description">
-                {Object.keys(order.order_details).map((code) => {
-                  const { name, quantity, additions } = order.order_details[code];
-                  return (
-                    <div className="order-card-item" key={code}>
-                      <div className="details">
-                        <span><strong>{name}</strong>: </span>
-                        <span><strong>{quantity}</strong></span>
-                      </div>
-
-                      {additions && Object.keys(additions).length > 0 && (
-                        <div className="order-additions">
-                          <span>- додатки: (
-                           {Object.keys(additions).map((extra) => (
-                              <span key={extra}> {extra}, </span>
-                            ))}
-                          )</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                <OrderItemsList
+                  orderDetails={order.order_details}
+                  showPrices={false}
+                />
               </div>
               <div className="order-card-price">{order.final_cost} грн.</div>
             </div>

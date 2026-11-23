@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { sendToServer } from '../utils/api';
+import { sendToServer } from '../../utils/api';
 import  OrderDetails from './OrderDetails';
-import { useOrder } from '../context/OrderContext';
-import { VIEWS } from '../constants/views';
-import { checkAuth } from '../utils/authUtils';
-import { getUserDiscount } from '../utils/userUtils';
+import { useOrder } from '../../context/OrderContext';
+import { VIEWS } from '../../constants/views';
+import { checkAuth } from '../../utils/authUtils';
+import { getUserDiscount } from '../../utils/userUtils';
 
 
 export default function OrderSummary({ goTo, totalCost, tableNumber }) {

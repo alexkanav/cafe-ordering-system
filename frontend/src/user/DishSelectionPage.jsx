@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { Header, Footer, Spinner } from '../components';
-import ProductViewer from './ProductViewer';
-import OrderSummary from './OrderSummary';
+import ProductViewer from './menu/ProductViewer';
+import OrderSummary from './order/OrderSummary';
 import TableSelection from './TableSelection';
 import { useOrder } from '../context/OrderContext';
 import { VIEWS } from '../constants/views';

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import AddOnMenu from './AddOnMenu';
-import { sendToServer } from '../utils/api';
-import love from '../assets/images/love.jpg';
-import star from '../assets/images/star.svg';
-import likeW from '../assets/images/likeW.jpg';
-import likeB from '../assets/images/likeB.jpg';
-import { useOrder } from '../context/OrderContext';
-import { config } from '../config';
+import { sendToServer } from '../../utils/api';
+import love from '../../assets/images/love.jpg';
+import star from '../../assets/images/star.svg';
+import likeW from '../../assets/images/likeW.jpg';
+import likeB from '../../assets/images/likeB.jpg';
+import { useOrder } from '../../context/OrderContext';
+import { config } from '../../config';
 
 
 export default function ProductCard(props) {
