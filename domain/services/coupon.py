@@ -10,6 +10,18 @@ from infrastructure.db.models.users import Coupon
 from utils.coupons import generate_coupon_code
 
 
+def validate_coupon(coupon: Coupon | None) -> int:
+    if coupon is None:
+        raise NotFoundError("Купон не знайдено")
+    if not coupon.is_active:
+        raise ConflictError("Купон недійсний або вже використано")
+    if coupon.expires_at and datetime.now(UTC).date() > coupon.expires_at:
+        raise DomainValidationError("Купон протермінований")
+    if not 0 <= coupon.discount_value <= 100:
+        raise DomainValidationError("Некоректне значення знижки")
+    return coupon.discount_value
+
+
 def create_coupon(db: Session, data: CouponCreateSchema) -> int:
     code = data.code or generate_coupon_code()
 
@@ -24,7 +36,6 @@ def create_coupon(db: Session, data: CouponCreateSchema) -> int:
         db.add(new_coupon)
         db.flush()
     except IntegrityError:
-        db.rollback()
         raise ConflictError(f"Купон з кодом: {code} вже існує")
 
     return new_coupon.id
@@ -44,9 +55,16 @@ def get_available_coupons(db: Session) -> list[CouponSchema]:
 
 
 def deactivate_coupon(db: Session, coupon_id: int) -> None:
-    coupon = db.get(Coupon, coupon_id)
-    if not coupon:
+    stmt = (
+        select(Coupon)
+        .where(Coupon.id == coupon_id)
+        .with_for_update()
+    )
+    coupon = db.scalar(stmt)
+
+    if coupon is None:
         raise NotFoundError(f"Купон: {coupon_id} не знайдено")
+
     if not coupon.is_active:
         raise ConflictError(f"Купон: {coupon_id} вже деактивовано")
 
@@ -59,17 +77,9 @@ def check_coupon(db: Session, coupon_code: str) -> int:
         .where(Coupon.code == coupon_code)
     )
     coupon = db.scalar(stmt)
+    discount_value = validate_coupon(coupon)
 
-    if coupon is None:
-        raise NotFoundError("Купон не знайдено")
-
-    if not coupon.is_active:
-        raise ConflictError("Купон вже використано")
-
-    if coupon.expires_at and datetime.now(UTC).date() > coupon.expires_at:
-        raise DomainValidationError("Купон протермінований")
-
-    return coupon.discount_value
+    return discount_value
 
 
 def process_coupon(db: Session, coupon_code: str, user_id: int) -> int:
@@ -80,24 +90,10 @@ def process_coupon(db: Session, coupon_code: str, user_id: int) -> int:
     )
 
     coupon = db.scalar(stmt)
-
-    if coupon is None:
-        return 0
-
-    now = datetime.now(UTC)
-
-    if not coupon.is_active:
-        return 0
-
-    if coupon.expires_at and now.date() > coupon.expires_at:
-        return 0
-
-    discount_value = coupon.discount_value
-    if not 0 <= discount_value <= 100:
-        return 0
+    discount_value = validate_coupon(coupon)
 
     coupon.user_id = user_id
-    coupon.used_at = now
+    coupon.used_at = datetime.now(UTC)
     coupon.is_active = False
 
     db.flush()
