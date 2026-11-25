@@ -6,7 +6,7 @@ def make_order_details_schema(**overrides):
         "name": "Pizza",
         "quantity": 2,
         "price": 200,
-        "additions": {"cheese": 20},
+        "additions": {"cheese": {"price": 20, "quantity": 3}}
     }
 
     params = {**defaults, **overrides}
@@ -17,10 +17,10 @@ def make_order_details_schema(**overrides):
 def make_order_schema(**overrides):
     defaults = {
         "table": 8,
-        "original_cost": 200,
+        "original_cost": 460,
         "loyalty_pct": 10,
         "coupon_pct": 5,
-        "final_cost": 171,
+        "final_cost": 391,
         "order_details": {"125": make_order_details_schema()},
         "coupon_code": "ABC"
     }

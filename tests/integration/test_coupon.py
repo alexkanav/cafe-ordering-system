@@ -132,12 +132,12 @@ def test_process_coupon__valid_coupon__returns_discount_and_marks_as_used(db_ses
     assert isinstance(db_coupon.used_at, datetime)
 
 
-@pytest.mark.parametrize("code", [
-    "C9",
-    "C3",
-    "C4",
+@pytest.mark.parametrize("code, error", [
+    ("C9", NotFoundError),
+    ("C4", ConflictError),
+    ("C3", DomainValidationError),
 ])
-def test_process_coupon__invalid_cases__raises_zero(db_session, sample_coupons, code):
-    coupon = services.coupon.process_coupon(db_session, coupon_code=code, user_id=1)
-    assert coupon == 0
+def test_process_coupon__invalid_cases__raises_errors(db_session, sample_coupons, code, error):
+    with pytest.raises(error):
+        services.coupon.process_coupon(db_session, coupon_code=code, user_id=1)
 

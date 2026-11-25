@@ -21,14 +21,28 @@ def sample_orders(db_session):
         table=3,
         original_cost=100,
         final_cost=85,
-        order_details={"123": {"name": "Pizza", "quantity": 1, "price": 100, "additions": {"cheese": 20}}},
+        order_details={"123":
+            {
+                "name": "Pizza",
+                "quantity": 1,
+                "price": 100,
+                "additions": {"cheese": {"price": 20, "quantity": 4}}
+            }
+        }
     )
     order_completed = Order(
         user_id=3,
         table=4,
         original_cost=200,
         final_cost=170,
-        order_details={"125": {"name": "Pasta", "quantity": 2, "price": 200, "additions": {}}},
+        order_details={"125":
+            {
+                "name": "Pasta",
+                "quantity": 2,
+                "price": 200,
+                "additions": {}
+            }
+        },
         completed_at=datetime.now(timezone.utc),
         completed_by=1
     )
@@ -130,9 +144,8 @@ def test_calculate_original_cost__valid_data_provided__returns_original_cost(
     order_data = make_order_schema()
     original_cost = calculate_original_cost(db_session, order_data.order_details)
     assert original_cost == (
-            order_data.order_details["125"].quantity
-            * sample_dish.price
-            + sample_extra.price
+            order_data.order_details["125"].quantity * sample_dish.price
+            + order_data.order_details["125"].additions["cheese"].quantity * sample_extra.price
     )
 
 
@@ -148,25 +161,28 @@ def test_calculate_original_cost__no_additions_exist__raises_not_found_error(db_
         services.create_order(db_session, order_data, user_id=user_id)
 
 
-@pytest.mark.parametrize("loyalty_pct, expected", [
-    (0, 0),
-    (5, 5),
-    (100, 100),
-    (-1, 0),
-    (101, 0),
-])
 def test_calculate_loyalty_pct__discount_value__returns_valid_discount(
-        db_session, mocker, loyalty_pct, expected
+        db_session, mocker
 ):
-    mocker.patch('domain.services.order.get_total_amount')
-    mocker.patch(
-        'domain.services.order.calculate_discount',
-        return_value=loyalty_pct
+    mock_get_total_amount = mocker.patch(
+        'domain.services.order.get_total_amount',
+        return_value=123
     )
 
-    result = calculate_loyalty_pct(db_session, 1)
+    mock_calculate_discount = mocker.patch(
+        'domain.services.order.calculate_discount',
+        return_value=15
+    )
 
-    assert result == expected
+    result = calculate_loyalty_pct(db_session, 12)
+
+    mock_get_total_amount.assert_called_once_with(
+        db_session, 12
+    )
+
+    mock_calculate_discount.assert_called_once_with(123)
+
+    assert result == 15
 
 
 def test_create_order__valid_data_provided__creates_order_record(db_session, mocker):
